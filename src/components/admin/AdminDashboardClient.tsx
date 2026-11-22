@@ -7,8 +7,6 @@ import {
   Blocks,
   Building2,
   CheckCircle2,
-  Eye,
-  EyeOff,
   ExternalLink,
   Image as ImageIcon,
   Inbox,
@@ -17,8 +15,6 @@ import {
   Loader2,
   LogOut,
   MessageSquareQuote,
-  Pencil,
-  Plus,
   Save,
   Settings,
   ShieldCheck,
@@ -27,7 +23,18 @@ import {
   Utensils,
   X,
 } from "lucide-react";
+import {
+  ACCENT_OPTIONS,
+  ICON_OPTIONS,
+  ItemRow,
+  NumberField,
+  SectionCard,
+  SelectField,
+  TextAreaField,
+  TextField,
+} from "@/components/admin/AdminFormPrimitives";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+import { PageSectionsManager } from "@/components/admin/PageSectionsManager";
 import type {
   AdminContactInquiry,
   AdminFacility,
@@ -53,31 +60,6 @@ type TabId =
   | "sections"
   | "inquiries";
 
-const ACCENT_OPTIONS = ["magenta", "orange", "teal", "coral", "olive", "blue"];
-const ICON_OPTIONS = [
-  "blocks",
-  "bed",
-  "camera",
-  "apple",
-  "trees",
-  "handHeart",
-  "sparkles",
-  "heart",
-  "shield",
-  "sun",
-  "clock",
-  "book",
-  "palette",
-  "music",
-  "utensils",
-  "smile",
-  "compass",
-  "calendarCheck",
-  "fileCheck",
-  "partyPopper",
-  "users",
-];
-
 type ModalState =
   | { kind: "closed" }
   | { kind: "program"; mode: "create" | "edit"; item: Record<string, unknown> }
@@ -89,8 +71,7 @@ type ModalState =
       item: Record<string, unknown>;
     }
   | { kind: "team"; mode: "create" | "edit"; item: Record<string, unknown> }
-  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> }
-  | { kind: "section"; mode: "create" | "edit"; item: Record<string, unknown> };
+  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> };
 
 interface AdminDashboardClientProps {
   adminBasePath: string;
@@ -132,7 +113,7 @@ export function AdminDashboardClient({
     initialData.inquiries,
   );
 
-  const [sectionCategoryFilter, setSectionCategoryFilter] = useState("all");
+  const visibleSections = sections.filter((s) => s.category !== "benefit");
   const [modal, setModal] = useState<ModalState>({ kind: "closed" });
   const [saving, setSaving] = useState(false);
 
@@ -261,7 +242,6 @@ export function AdminDashboardClient({
       testimonial: "testimonials",
       team: "team",
       menu: "menu",
-      section: "sections",
     };
 
     const resource = resourceMap[modal.kind];
@@ -364,7 +344,7 @@ export function AdminDashboardClient({
       id: "sections",
       label: "Page Sections",
       icon: <Layers className="h-4 w-4" />,
-      count: sections.length,
+      count: visibleSections.length,
     },
     {
       id: "programs",
@@ -410,11 +390,6 @@ export function AdminDashboardClient({
     },
   ];
 
-  const uniqueCategories = Array.from(new Set(sections.map((s) => s.category)));
-  const filteredSections =
-    sectionCategoryFilter === "all"
-      ? sections
-      : sections.filter((s) => s.category === sectionCategoryFilter);
   const activeNavItem =
     navItems.find((item) => item.id === activeTab) ?? navItems[0];
 
@@ -659,8 +634,8 @@ export function AdminDashboardClient({
                     },
                     {
                       label: "Page Sections",
-                      pub: sections.filter((x) => x.published).length,
-                      total: sections.length,
+                      pub: visibleSections.filter((x) => x.published).length,
+                      total: visibleSections.length,
                       tab: "sections" as TabId,
                     },
                     {
@@ -983,89 +958,11 @@ export function AdminDashboardClient({
 
           {/* TAB 3: PAGE SECTIONS */}
           {activeTab === "sections" && (
-            <SectionCard
-              title="Page Sections (Home, About, Pillars, Routine, Admissions, FAQs)"
-              subtitle="Edit or toggle Publish/Unpublish on homepage Hero, Philosophy, Care Grid cards, Core Values, Pillars, Daily Routine & FAQs."
-              onAdd={() =>
-                setModal({
-                  kind: "section",
-                  mode: "create",
-                  item: {
-                    page: "home",
-                    category: "care-grid",
-                    badge: "",
-                    title: "",
-                    subtitle: "",
-                    description: "",
-                    imageUrl: "/images/hero-classroom.jpg",
-                    imageAlt: "",
-                    iconName: "sparkles",
-                    accent: "magenta",
-                    sortOrder: sections.length + 1,
-                    published: false,
-                  },
-                })
-              }
-            >
-              <div className="mb-4 flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setSectionCategoryFilter("all")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    sectionCategoryFilter === "all"
-                      ? "bg-[#E91E63] text-white"
-                      : "bg-[#FFF8F5] text-[#78909C]"
-                  }`}
-                >
-                  All ({sections.length})
-                </button>
-                {uniqueCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSectionCategoryFilter(cat)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      sectionCategoryFilter === cat
-                        ? "bg-[#E91E63] text-white"
-                        : "bg-[#FFF8F5] text-[#78909C]"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-3">
-                {filteredSections.map((item) => (
-                  <ItemRow
-                    key={item.id}
-                    title={item.title}
-                    meta={`${item.page} • ${item.category}${item.badge ? ` • ${item.badge}` : ""}`}
-                    subtitle={item.description}
-                    imageUrl={item.imageUrl || undefined}
-                    published={item.published}
-                    onTogglePublish={() =>
-                      handleTogglePublish("sections", item.id, item.published)
-                    }
-                    onEdit={() =>
-                      setModal({
-                        kind: "section",
-                        mode: "edit",
-                        item: {
-                          ...item,
-                          metadata: item.metadata
-                            ? JSON.stringify(item.metadata, null, 2)
-                            : "",
-                        },
-                      })
-                    }
-                    onDelete={() =>
-                      handleDelete("sections", item.id, item.title)
-                    }
-                  />
-                ))}
-              </div>
-            </SectionCard>
+            <PageSectionsManager
+              sections={visibleSections}
+              onRefresh={() => refreshResource("sections")}
+              onNotify={showToast}
+            />
           )}
 
           {/* TAB 4: PROGRAMS & CARE TRACKS */}
@@ -1918,328 +1815,5 @@ function renderModalFields(
           />
         </>
       );
-
-    case "section":
-      return (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <SelectField
-              label="Page"
-              value={String(item.page || "home")}
-              options={["home", "about", "programs", "admissions", "shared"]}
-              onChange={(v) => set("page", v)}
-            />
-            <SelectField
-              label="Category"
-              value={String(item.category || "care-grid")}
-              options={[
-                "hero",
-                "philosophy",
-                "care-grid",
-                "story",
-                "value",
-                "pillar",
-                "routine",
-                "admission-step",
-                "admission-req",
-                "age-row",
-                "faq",
-                "cta",
-              ]}
-              onChange={(v) => set("category", v)}
-            />
-            <TextField
-              label="Badge / Small Eyebrow / Timing"
-              value={String(item.badge || "")}
-              onChange={(v) => set("badge", v)}
-            />
-            <TextField
-              label="Title *"
-              required
-              value={String(item.title || "")}
-              onChange={(v) => set("title", v)}
-            />
-            <TextField
-              label="Subtitle / Quote / Highlight Word"
-              value={String(item.subtitle || "")}
-              onChange={(v) => set("subtitle", v)}
-            />
-            <SelectField
-              label="Icon"
-              value={String(item.iconName || "sparkles")}
-              options={ICON_OPTIONS}
-              onChange={(v) => set("iconName", v)}
-            />
-            <SelectField
-              label="Accent Color"
-              value={String(item.accent || "magenta")}
-              options={ACCENT_OPTIONS}
-              onChange={(v) => set("accent", v)}
-            />
-            <NumberField
-              label="Sort Order"
-              value={Number(item.sortOrder || 0)}
-              onChange={(v) => set("sortOrder", v)}
-            />
-          </div>
-          <ImageUploadField
-            label="Section Image (if applicable)"
-            value={String(item.imageUrl || "")}
-            onChange={(url) => set("imageUrl", url)}
-          />
-          <TextAreaField
-            label="Description / Body Text"
-            value={String(item.description || "")}
-            onChange={(v) => set("description", v)}
-          />
-          <TextAreaField
-            label="Extra Metadata JSON (optional)"
-            value={String(item.metadata || "")}
-            onChange={(v) => set("metadata", v)}
-          />
-        </>
-      );
   }
-}
-
-function SectionCard({
-  title,
-  subtitle,
-  onAdd,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  onAdd: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-3xl border border-[#2D3436]/8 bg-white p-6 shadow-warm">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#2D3436]/8 pb-4">
-        <div>
-          <h2 className="font-[family-name:var(--font-fredoka)] text-xl font-semibold text-[#2D3436]">
-            {title}
-          </h2>
-          <p className="mt-0.5 text-xs text-[#78909C]">{subtitle}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#E91E63] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#E91E63]/90"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add New</span>
-        </button>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ItemRow({
-  title,
-  meta,
-  subtitle,
-  imageUrl,
-  published,
-  onTogglePublish,
-  onEdit,
-  onDelete,
-}: {
-  title: string;
-  meta: string;
-  subtitle?: string;
-  imageUrl?: string;
-  published: boolean;
-  onTogglePublish: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#2D3436]/8 bg-[#FFF8F5] p-4 sm:flex-row sm:items-center">
-      <div className="flex min-w-0 items-start gap-3">
-        {imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt={title}
-            className="h-14 w-16 shrink-0 rounded-xl border border-[#2D3436]/10 bg-white object-cover"
-          />
-        )}
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#2D3436]">
-              {title}
-            </h3>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                published
-                  ? "bg-[#26A69A]/15 text-[#26A69A]"
-                  : "bg-[#78909C]/15 text-[#78909C]"
-              }`}
-            >
-              {published ? "Published" : "Draft"}
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs font-medium text-[#E91E63]">{meta}</p>
-          {subtitle && (
-            <p className="mt-1 line-clamp-2 text-xs text-[#78909C]">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onTogglePublish}
-          className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-            published
-              ? "border border-[#26A69A]/25 bg-white text-[#26A69A] hover:bg-[#26A69A]/10"
-              : "bg-[#26A69A] text-white hover:bg-[#26A69A]/90"
-          }`}
-        >
-          {published ? (
-            <>
-              <EyeOff className="h-3.5 w-3.5" />
-              <span>Unpublish</span>
-            </>
-          ) : (
-            <>
-              <Eye className="h-3.5 w-3.5" />
-              <span>Publish</span>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={onEdit}
-          className="inline-flex items-center gap-1 rounded-xl border border-[#2D3436]/12 bg-white px-3 py-2 text-xs font-semibold text-[#2D3436] hover:border-[#E91E63] hover:text-[#E91E63]"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          <span>Edit</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          className="inline-flex items-center justify-center rounded-xl border border-[#FF6B81]/25 bg-white p-2 text-[#E91E63] hover:bg-[#FFF1EB]"
-          aria-label={`Delete ${title}`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (val: string) => void;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#2D3436]">
-        {label}
-      </label>
-      <input
-        type="text"
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-[#2D3436]/15 bg-[#FFF8F5] px-3 py-2 text-sm text-[#2D3436] focus:border-[#E91E63] focus:bg-white focus:outline-none"
-      />
-    </div>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (val: number) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#2D3436]">
-        {label}
-      </label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="w-full rounded-xl border border-[#2D3436]/15 bg-[#FFF8F5] px-3 py-2 text-sm text-[#2D3436] focus:border-[#E91E63] focus:bg-white focus:outline-none"
-      />
-    </div>
-  );
-}
-
-function TextAreaField({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (val: string) => void;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#2D3436]">
-        {label}
-      </label>
-      <textarea
-        rows={3}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-[#2D3436]/15 bg-[#FFF8F5] px-3 py-2 text-sm text-[#2D3436] focus:border-[#E91E63] focus:bg-white focus:outline-none"
-      />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (val: string) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#2D3436]">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-[#2D3436]/15 bg-[#FFF8F5] px-3 py-2 text-sm text-[#2D3436] focus:border-[#E91E63] focus:bg-white focus:outline-none"
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
 }
