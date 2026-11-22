@@ -16,7 +16,9 @@ import {
 import { QuickContactCard } from "@/components/sections/QuickContactCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FacebookIcon, InstagramIcon } from "@/components/ui/SocialIcons";
-import { getSiteConfig } from "@/data/site-data";
+import { getCmsSiteConfig } from "@/lib/cms";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Contact & Visit Us",
@@ -24,17 +26,17 @@ export const metadata: Metadata = {
     "Visit Kids Berry Kindergarten School at Pichara, Biratnagar-11, Nepal. View regular hours (9 AM – 3 PM), after-class care (3 PM – 5 PM), phone, email, WhatsApp, social links, and Google Map.",
 };
 
-export default function ContactPage() {
-  const site = getSiteConfig();
+export default async function ContactPage() {
+  const site = await getCmsSiteConfig();
   const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    "Namaste Kids Berry Kindergarten School! I would like to ask about Regular Classes, Daycare, or After-Class Care.",
+    `Namaste ${site.schoolName}! I would like to ask about Regular Classes, Daycare, or After-Class Care.`,
   )}`;
 
   return (
     <>
       <PageHeader
         title="Contact & Visit Us"
-        subtitle="Visit Kids Berry Kindergarten School at Pichara, Biratnagar-11 (Sunday – Friday) or reach our desk anytime via phone or WhatsApp."
+        subtitle={`Visit ${site.schoolName} at ${site.address.street} (${site.hours.days}) or reach our desk anytime via phone or WhatsApp.`}
         currentPage="Contact"
       />
 
@@ -141,8 +143,7 @@ export default function ContactPage() {
               </h2>
               <p className="mt-1 text-sm text-[#78909C]">
                 Chat directly with our admissions coordinator on WhatsApp or
-                follow Kids Berry Kindergarten School on Facebook &amp;
-                Instagram.
+                follow {site.schoolName} on Facebook &amp; Instagram.
               </p>
             </div>
 
@@ -187,7 +188,7 @@ export default function ContactPage() {
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#2D3436]/8 px-6 py-4">
                 <div>
                   <h2 className="text-[1.2rem] font-semibold leading-[1.3] text-[#2D3436]">
-                    Find Us in Pichara, Biratnagar-11
+                    Find Us in {site.address.street}
                   </h2>
                   <p className="text-xs text-[#78909C]">
                     {site.address.fullAddress}
@@ -206,7 +207,7 @@ export default function ContactPage() {
 
               <div className="relative min-h-[380px] flex-1 bg-[#FFF8F5]">
                 <iframe
-                  title="Kids Berry Kindergarten School Location Map — Pichara, Biratnagar-11, Nepal"
+                  title={`${site.schoolName} Location Map — ${site.address.fullAddress}`}
                   src={site.googleMapsEmbedUrl}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
@@ -218,7 +219,10 @@ export default function ContactPage() {
           </ScrollReveal>
 
           <ScrollReveal direction="right" delay={0.1} className="lg:col-span-5">
-            <QuickContactCard />
+            <QuickContactCard
+              whatsappNumber={site.contact.whatsappNumber}
+              schoolName={site.schoolName}
+            />
           </ScrollReveal>
         </div>
       </section>

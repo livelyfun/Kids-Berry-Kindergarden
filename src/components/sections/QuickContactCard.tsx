@@ -1,25 +1,55 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { CheckCircle2, MessageCircle, Send } from "lucide-react";
-import { getSiteConfig } from "@/data/site-data";
+import { CheckCircle2, Loader2, MessageCircle, Send } from "lucide-react";
 
-export function QuickContactCard() {
+interface QuickContactCardProps {
+  whatsappNumber: string;
+  schoolName: string;
+}
+
+export function QuickContactCard({
+  whatsappNumber,
+  schoolName,
+}: QuickContactCardProps) {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [subject, setSubject] = useState("General Question");
   const [message, setMessage] = useState("");
 
-  const site = getSiteConfig();
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSent(true);
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parentName: name,
+          phone,
+          preferredCare: subject,
+          message,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error || "Unable to submit note.");
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setError("Network error while sending message.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    `Namaste Kids Berry Kindergarten School! Name: ${name || "Parent"} (${
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    `Namaste ${schoolName}! Name: ${name || "Parent"} (${
       phone || "N/A"
     }) — ${subject}: ${message || "I would like to connect with the school."}`,
   )}`;
@@ -31,11 +61,12 @@ export function QuickContactCard() {
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <h3 className="mt-4 text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
-          Message Preview Ready
+          Message Received!
         </h3>
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#78909C]">
-          This contact form is a frontend UI preview for now. You can send your
-          note immediately via WhatsApp or call our office directly.
+          Thank you, <strong className="text-[#2D3436]">{name}</strong>. Our
+          school coordinator has received your inquiry and will get back to you
+          soon.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <a
@@ -45,7 +76,7 @@ export function QuickContactCard() {
             className="inline-flex items-center gap-2 rounded-full bg-[#26A69A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#26A69A]/90"
           >
             <MessageCircle className="h-4 w-4" />
-            <span>Send on WhatsApp</span>
+            <span>Also Chat on WhatsApp</span>
           </a>
           <button
             type="button"
@@ -57,7 +88,7 @@ export function QuickContactCard() {
             }}
             className="rounded-full border border-[#2D3436]/15 px-5 py-3 text-sm font-semibold text-[#2D3436] hover:bg-[#FFF1EB]"
           >
-            Reset Form
+            Send Another Note
           </button>
         </div>
       </div>
@@ -74,13 +105,19 @@ export function QuickContactCard() {
           <h3 className="text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
             Send Us a Quick Note
           </h3>
-          <span className="rounded-full bg-[#FFF1EB] px-3 py-1 text-xs font-semibold text-[#E91E63]">
-            Frontend UI
+          <span className="rounded-full bg-[#26A69A]/12 px-3 py-1 text-xs font-semibold text-[#26A69A]">
+            Direct Desk
           </span>
         </div>
         <p className="mt-1.5 text-sm text-[#78909C]">
           Have a question about timings, age placement, or visiting hours?
         </p>
+
+        {error && (
+          <p className="mt-4 rounded-2xl bg-[#FF6B81]/12 px-4 py-2.5 text-xs font-medium text-[#E91E63]">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -165,10 +202,15 @@ export function QuickContactCard() {
 
       <button
         type="submit"
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E91E63] px-6 py-3.5 text-sm font-semibold text-white shadow-warm transition-all hover:-translate-y-0.5 hover:bg-[#E91E63]/90"
+        disabled={submitting}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E91E63] px-6 py-3.5 text-sm font-semibold text-white shadow-warm transition-all hover:-translate-y-0.5 hover:bg-[#E91E63]/90 disabled:opacity-60"
       >
-        <Send className="h-4 w-4" />
-        <span>Preview Message</span>
+        {submitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Send className="h-4 w-4" />
+        )}
+        <span>{submitting ? "Sending..." : "Send Message"}</span>
       </button>
     </form>
   );

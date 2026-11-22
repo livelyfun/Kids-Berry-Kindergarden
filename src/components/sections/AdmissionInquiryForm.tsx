@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { CheckCircle2, MessageCircle, Send, Sparkles } from "lucide-react";
-import { getPrograms, getSiteConfig } from "@/data/site-data";
+import {
+  CheckCircle2,
+  Loader2,
+  MessageCircle,
+  Send,
+  Sparkles,
+} from "lucide-react";
+import type { ProgramItem } from "@/types/cms";
+
+interface AdmissionInquiryFormProps {
+  programs: ProgramItem[];
+  whatsappNumber: string;
+  schoolName: string;
+}
 
 interface InquiryState {
   parentName: string;
@@ -15,37 +27,69 @@ interface InquiryState {
   message: string;
 }
 
-const INITIAL_STATE: InquiryState = {
-  parentName: "",
-  phone: "",
-  email: "",
-  childName: "",
-  childAge: "",
-  program: "Playgroup (1.8 – 2.5 Years)",
-  visitDate: "",
-  message: "",
-};
+export function AdmissionInquiryForm({
+  programs,
+  whatsappNumber,
+  schoolName,
+}: AdmissionInquiryFormProps) {
+  const defaultProgram = programs[0]
+    ? `${programs[0].title} (${programs[0].ageGroup})`
+    : "Playgroup (1.8 – 2.5 Years)";
 
-export function AdmissionInquiryForm() {
-  const [form, setForm] = useState<InquiryState>(INITIAL_STATE);
-  const [submitted, setSubmitted] = useState(false);
-
-  const programs = getPrograms();
-  const site = getSiteConfig();
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitted(true);
+  const initialState: InquiryState = {
+    parentName: "",
+    phone: "",
+    email: "",
+    childName: "",
+    childAge: "",
+    program: defaultProgram,
+    visitDate: "",
+    message: "",
   };
 
-  const whatsappPrefillUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    `Namaste Kids Berry Kindergarten School! Parent: ${
-      form.parentName || "Parent"
-    }, Child: ${form.childName || "Child"} (${
-      form.childAge || "Age N/A"
-    }), Interested in: ${form.program}. Phone: ${form.phone || "N/A"}. ${
-      form.message ? `Notes: ${form.message}` : ""
-    }`,
+  const [form, setForm] = useState<InquiryState>(initialState);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parentName: form.parentName,
+          phone: form.phone,
+          email: form.email,
+          childName: form.childName,
+          childAge: form.childAge,
+          program: form.program,
+          preferredDate: form.visitDate,
+          message: form.message,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error || "Unable to submit inquiry.");
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      setError("Network error while submitting your inquiry.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const whatsappPrefillUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    `Namaste ${schoolName}! Parent: ${form.parentName || "Parent"}, Child: ${
+      form.childName || "Child"
+    } (${form.childAge || "Age N/A"}), Interested in: ${form.program}. Phone: ${
+      form.phone || "N/A"
+    }. ${form.message ? `Notes: ${form.message}` : ""}`,
   )}`;
 
   if (submitted) {
@@ -55,19 +99,19 @@ export function AdmissionInquiryForm() {
           <CheckCircle2 className="h-9 w-9" />
         </div>
         <h3 className="mt-5 text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
-          Inquiry Preview Ready!
+          Tour Inquiry Submitted!
         </h3>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#78909C]">
           Thank you,{" "}
           <strong className="text-[#2D3436]">
             {form.parentName || "Parent"}
           </strong>
-          ! This frontend preview has captured your inquiry details for{" "}
+          ! Your inquiry for{" "}
           <strong className="text-[#E91E63]">
             {form.childName || "your child"}
           </strong>{" "}
-          ({form.program}). Online database submission will be connected in the
-          next phase.
+          ({form.program}) has been saved. Our admissions coordinator will
+          contact you shortly.
         </p>
 
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -78,17 +122,17 @@ export function AdmissionInquiryForm() {
             className="inline-flex items-center gap-2 rounded-full bg-[#26A69A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#26A69A]/90"
           >
             <MessageCircle className="h-4 w-4" />
-            <span>Send Now via WhatsApp</span>
+            <span>Chat Immediately on WhatsApp</span>
           </a>
           <button
             type="button"
             onClick={() => {
               setSubmitted(false);
-              setForm(INITIAL_STATE);
+              setForm(initialState);
             }}
             className="inline-flex items-center gap-2 rounded-full border border-[#2D3436]/15 bg-[#FFF8F5] px-6 py-3 text-sm font-semibold text-[#2D3436] transition-colors hover:bg-[#FFF1EB]"
           >
-            Fill Another Inquiry
+            Submit Another Inquiry
           </button>
         </div>
       </div>
@@ -104,16 +148,22 @@ export function AdmissionInquiryForm() {
         <div>
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#E91E63]">
             <Sparkles className="h-3.5 w-3.5" />
-            Admission & Tour Inquiry
+            Admission &amp; Tour Inquiry
           </span>
           <h3 className="mt-1 text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
             Request a Campus Visit or Seat Info
           </h3>
         </div>
-        <span className="rounded-full bg-[#FFF1EB] px-3.5 py-1 text-xs font-semibold text-[#FF7A45]">
-          Frontend Preview UI
+        <span className="rounded-full bg-[#26A69A]/12 px-3.5 py-1 text-xs font-semibold text-[#26A69A]">
+          Online Inquiry
         </span>
       </div>
+
+      {error && (
+        <p className="mt-4 rounded-2xl bg-[#FF6B81]/12 px-4 py-3 text-xs font-medium text-[#E91E63]">
+          {error}
+        </p>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
@@ -267,10 +317,15 @@ export function AdmissionInquiryForm() {
         </p>
         <button
           type="submit"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E91E63] px-8 py-3.5 text-sm font-semibold text-white shadow-warm transition-all hover:-translate-y-0.5 hover:bg-[#E91E63]/90 sm:w-auto"
+          disabled={submitting}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E91E63] px-8 py-3.5 text-sm font-semibold text-white shadow-warm transition-all hover:-translate-y-0.5 hover:bg-[#E91E63]/90 disabled:opacity-60 sm:w-auto"
         >
-          <Send className="h-4 w-4" />
-          <span>Preview Inquiry Submission</span>
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          <span>{submitting ? "Submitting..." : "Submit Inquiry"}</span>
         </button>
       </div>
     </form>

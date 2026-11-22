@@ -2,13 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { Clock, Heart, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { FacebookIcon, InstagramIcon } from "@/components/ui/SocialIcons";
-import { getPrograms, getSiteConfig } from "@/data/site-data";
+import type { ExtendedSiteConfig } from "@/lib/cms";
+import type { ProgramItem } from "@/types/cms";
 
-export function Footer() {
-  const site = getSiteConfig();
-  const programs = getPrograms();
+interface FooterProps {
+  site: ExtendedSiteConfig;
+  programs: ProgramItem[];
+}
+
+export function Footer({ site, programs }: FooterProps) {
   const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    "Namaste! I would like to learn more about Kids Berry Kindergarten School in Pichara, Biratnagar-11.",
+    `Namaste! I would like to learn more about ${site.schoolName} in ${site.address.street}.`,
   )}`;
 
   return (
@@ -31,7 +35,7 @@ export function Footer() {
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-[#FF6B81]/20 bg-white p-1 shadow-xs">
                 <Image
                   src={site.logoPath}
-                  alt="Kids Berry Kindergarten School Logo"
+                  alt={`${site.schoolName} Logo`}
                   width={48}
                   height={48}
                   className="h-full w-full object-contain"
@@ -42,21 +46,19 @@ export function Footer() {
                   {site.schoolName}
                 </h3>
                 <p className="text-xs font-semibold text-[#E91E63]">
-                  Pichara, Biratnagar-11
+                  {site.address.street}
                 </p>
               </div>
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-[#78909C]">
-              A Montessori-implemented pre-school and loving daycare offering
-              24/7 CCTV-monitored safety, fresh weekly meals with daily hot milk
-              &amp; fruits, and care until 5:00 PM.
+              {site.tagline}
             </p>
             <div className="mt-5 flex items-center gap-3">
               <a
                 href={site.social.facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Kids Berry Kindergarten School on Facebook"
+                aria-label={`${site.schoolName} on Facebook`}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#5C6BC0] shadow-xs transition-all hover:-translate-y-0.5 hover:bg-[#5C6BC0] hover:text-white"
               >
                 <FacebookIcon className="h-4 w-4" />
@@ -65,7 +67,7 @@ export function Footer() {
                 href={site.social.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Kids Berry Kindergarten School on Instagram"
+                aria-label={`${site.schoolName} on Instagram`}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#E91E63] shadow-xs transition-all hover:-translate-y-0.5 hover:bg-[#E91E63] hover:text-white"
               >
                 <InstagramIcon className="h-4 w-4" />
@@ -74,7 +76,7 @@ export function Footer() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Chat with Kids Berry Kindergarten School on WhatsApp"
+                aria-label={`Chat with ${site.schoolName} on WhatsApp`}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#26A69A] shadow-xs transition-all hover:-translate-y-0.5 hover:bg-[#26A69A] hover:text-white"
               >
                 <MessageCircle className="h-4 w-4" />
@@ -85,7 +87,7 @@ export function Footer() {
           {/* Quick Links */}
           <div>
             <h4 className="font-[family-name:var(--font-fredoka)] text-lg font-semibold text-[#2D3436]">
-              Explore Kids Berry
+              Explore {site.shortName}
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
@@ -110,7 +112,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Age Programs */}
+          {/* Age Programs (Dynamic Published Programs) */}
           <div>
             <h4 className="font-[family-name:var(--font-fredoka)] text-lg font-semibold text-[#2D3436]">
               Montessori Age Groups
@@ -194,7 +196,7 @@ export function Footer() {
             © {new Date().getFullYear()} {site.schoolName}. All rights reserved.
           </p>
           <p className="inline-flex items-center gap-1.5">
-            <span>Montessori Pre-school &amp; Daycare in Biratnagar-11</span>
+            <span>{site.schoolType} • {site.address.ward}</span>
             <Heart className="h-3.5 w-3.5 fill-[#E91E63] text-[#E91E63]" />
           </p>
         </div>

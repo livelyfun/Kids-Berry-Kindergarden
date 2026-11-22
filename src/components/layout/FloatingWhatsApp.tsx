@@ -2,12 +2,11 @@
 
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
-import { getSiteConfig } from "@/data/site-data";
+import type { ExtendedSiteConfig } from "@/lib/cms";
 
-export function FloatingWhatsApp() {
-  const site = getSiteConfig();
+export function FloatingWhatsApp({ site }: { site: ExtendedSiteConfig }) {
   const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    "Namaste! I would like to inquire about Kids Berry Kindergarten School in Pichara, Biratnagar-11.",
+    `Namaste! I would like to inquire about ${site.schoolName} in ${site.address.street}.`,
   )}`;
 
   return (
@@ -15,7 +14,7 @@ export function FloatingWhatsApp() {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Chat with Kids Berry Kindergarten School on WhatsApp"
+      aria-label={`Chat with ${site.schoolName} on WhatsApp`}
       initial={{ opacity: 0, y: 20, scale: 0.92 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.6, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}

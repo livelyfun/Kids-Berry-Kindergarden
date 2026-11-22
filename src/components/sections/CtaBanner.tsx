@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CalendarCheck, MessageCircle, Phone } from "lucide-react";
 import { ScrollReveal } from "@/components/motion/MontessoriMotion";
-import { getSiteConfig } from "@/data/site-data";
+import { getCmsSiteConfig, getPublishedSharedCta } from "@/lib/cms";
 
 interface CtaBannerProps {
   badge?: string;
@@ -9,14 +9,31 @@ interface CtaBannerProps {
   description?: string;
 }
 
-export function CtaBanner({
-  badge = "Admissions Open • Regular & Daycare",
-  title = "Come Visit Kids Berry Kindergarten School in Pichara, Biratnagar-11",
-  description = "Tour our CCTV-monitored Montessori classrooms, inspect our clean kitchen & weekly food menu, and speak with our warm educators.",
+export async function CtaBanner({
+  badge,
+  title,
+  description,
 }: CtaBannerProps) {
-  const site = getSiteConfig();
+  const [site, sharedCta] = await Promise.all([
+    getCmsSiteConfig(),
+    getPublishedSharedCta(),
+  ]);
+
+  if (!sharedCta && !title) return null;
+
+  const finalBadge =
+    badge || sharedCta?.badge || "Admissions Open • Regular & Daycare";
+  const finalTitle =
+    title ||
+    sharedCta?.title ||
+    `Come Visit ${site.schoolName} in ${site.address.street}`;
+  const finalDescription =
+    description ||
+    sharedCta?.description ||
+    "Tour our CCTV-monitored Montessori classrooms, inspect our clean kitchen & weekly food menu, and speak with our warm educators.";
+
   const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    "Namaste! I would like to inquire about Regular Classes, Daycare, or After-Class Care at Kids Berry Kindergarten School, Pichara, Biratnagar-11.",
+    `Namaste! I would like to inquire about Regular Classes, Daycare, or After-Class Care at ${site.schoolName}, ${site.address.street}.`,
   )}`;
 
   return (
@@ -37,13 +54,13 @@ export function CtaBanner({
             <div className="max-w-2xl">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.05em] text-white backdrop-blur-sm">
                 <CalendarCheck className="h-3.5 w-3.5" />
-                {badge}
+                {finalBadge}
               </span>
               <h2 className="mt-4 font-[family-name:var(--font-fredoka)] text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] text-white sm:text-[2.25rem]">
-                {title}
+                {finalTitle}
               </h2>
               <p className="mt-3 text-[0.9375rem] font-normal leading-[1.68] text-white/95 sm:text-base">
-                {description}
+                {finalDescription}
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/95">
                 <a

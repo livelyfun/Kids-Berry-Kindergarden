@@ -11,18 +11,38 @@ import {
   MessageCircle,
   Sun,
 } from "lucide-react";
+import type { ExtendedSiteConfig, HeroSectionData } from "@/lib/cms";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface HomeHeroProps {
+  hero: HeroSectionData;
+  site: ExtendedSiteConfig;
   whatsappUrl: string;
 }
 
-export function HomeHero({ whatsappUrl }: HomeHeroProps) {
+function renderHighlightedTitle(title: string, highlightWord: string) {
+  const cleanHighlight = highlightWord.trim();
+  if (!cleanHighlight) return title;
+  const idx = title.toLowerCase().indexOf(cleanHighlight.toLowerCase());
+  if (idx === -1) return title;
+  const before = title.slice(0, idx);
+  const match = title.slice(idx, idx + cleanHighlight.length);
+  const after = title.slice(idx + cleanHighlight.length);
+  return (
+    <>
+      {before}
+      <span className="text-[#AED581]">{match}</span>
+      {after}
+    </>
+  );
+}
+
+export function HomeHero({ hero, site, whatsappUrl }: HomeHeroProps) {
   return (
     <section className="relative w-full overflow-hidden bg-[#FFF8F5]">
       <div className="relative flex min-h-[540px] w-full items-center overflow-hidden bg-[#2D3436] sm:min-h-[600px] lg:min-h-[660px]">
-        {/* Edge-to-Edge Sunlit Classroom Photo with Subtle Entrance Scale */}
+        {/* Edge-to-Edge Sunlit Classroom Photo */}
         <motion.div
           initial={{ scale: 1.06, opacity: 0.9 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -30,8 +50,8 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
           className="absolute inset-0"
         >
           <Image
-            src="/images/hero-classroom.jpg"
-            alt="Happy children learning with wooden Montessori materials and their caring teacher at Kids Berry Kindergarten School"
+            src={hero.imageUrl}
+            alt={hero.imageAlt}
             fill
             priority
             className="object-cover object-[68%_30%] sm:object-[62%_28%]"
@@ -51,18 +71,17 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
         {/* Editorial Foreground Copy */}
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8 lg:pb-32">
           <div className="max-w-2xl">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.08, ease: EASE }}
-              className="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium tracking-[0.04em] text-white backdrop-blur-md sm:text-[13px]"
-            >
-              <span className="h-2 w-2 shrink-0 rounded-full bg-[#AED581]" />
-              <span>
-                Montessori Implemented Pre-school &amp; Daycare • Pichara,
-                Biratnagar-11
-              </span>
-            </motion.div>
+            {hero.badge && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.08, ease: EASE }}
+                className="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium tracking-[0.04em] text-white backdrop-blur-md sm:text-[13px]"
+              >
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[#AED581]" />
+                <span>{hero.badge}</span>
+              </motion.div>
+            )}
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -70,8 +89,7 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
               transition={{ duration: 0.65, delay: 0.16, ease: EASE }}
               className="mt-6 font-[family-name:var(--font-fredoka)] text-[2.25rem] font-semibold leading-[1.13] tracking-[-0.02em] text-white sm:text-[3rem] lg:text-[3.35rem]"
             >
-              Where Little Minds Grow with{" "}
-              <span className="text-[#AED581]">Montessori</span> Joy &amp; Care
+              {renderHighlightedTitle(hero.title, hero.highlightWord)}
             </motion.h1>
 
             <motion.p
@@ -80,10 +98,7 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
               transition={{ duration: 0.65, delay: 0.25, ease: EASE }}
               className="mt-5 max-w-xl text-base font-normal leading-[1.7] text-white/90 sm:text-[1.0625rem]"
             >
-              A warm, 24/7 CCTV-monitored pre-school and loving daycare in
-              Pichara, Biratnagar-11 — offering regular classes (9 AM – 3 PM),
-              after-class care (3 PM – 5 PM), and fresh weekly meals with daily
-              hot milk &amp; fruits.
+              {hero.description}
             </motion.p>
 
             <motion.div
@@ -93,10 +108,10 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
               className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center"
             >
               <Link
-                href="/contact"
+                href={hero.primaryCtaHref}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FF7A45] via-[#FF6B81] to-[#E91E63] px-7 py-3.5 text-[0.9375rem] font-semibold text-white shadow-warm-lg transition-transform duration-200 hover:-translate-y-0.5 hover:opacity-95"
               >
-                <span>Schedule a Campus Visit</span>
+                <span>{hero.primaryCtaLabel}</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a
@@ -106,7 +121,7 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#26A69A] px-7 py-3.5 text-[0.9375rem] font-semibold text-white shadow-warm-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#26A69A]/90"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>WhatsApp Admissions</span>
+                <span>{hero.secondaryCtaLabel}</span>
               </a>
             </motion.div>
           </div>
@@ -130,7 +145,7 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
         </div>
       </div>
 
-      {/* Unified 4-Column Timings & Safety Trust Dock */}
+      {/* Unified 4-Column Timings & Safety Trust Dock (Dynamic from SiteSettings) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -148,7 +163,7 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
                   Regular Class
                 </p>
                 <p className="font-[family-name:var(--font-fredoka)] text-[0.9375rem] font-semibold text-[#2D3436] sm:text-base">
-                  9:00 AM – 3:00 PM
+                  {site.hours.regularClassTime}
                 </p>
               </div>
             </div>
@@ -159,10 +174,12 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
               </span>
               <div>
                 <p className="text-xs font-medium text-[#78909C]">
-                  Daycare &amp; After-Care
+                  {site.daycareAvailable
+                    ? "Daycare & After-Care"
+                    : "Extended Hours"}
                 </p>
                 <p className="font-[family-name:var(--font-fredoka)] text-[0.9375rem] font-semibold text-[#2D3436] sm:text-base">
-                  3:00 PM – 5:00 PM
+                  {site.hours.afterClassCareTime}
                 </p>
               </div>
             </div>
@@ -176,7 +193,9 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
                   Food Provided
                 </p>
                 <p className="font-[family-name:var(--font-fredoka)] text-[0.9375rem] font-semibold text-[#2D3436] sm:text-base">
-                  Weekly Menu + Milk &amp; Fruits
+                  {site.foodProvided
+                    ? "Weekly Menu + Milk & Fruits"
+                    : "Healthy Parent Tiffin"}
                 </p>
               </div>
             </div>
@@ -190,7 +209,9 @@ export function HomeHero({ whatsappUrl }: HomeHeroProps) {
                   Safe Campus
                 </p>
                 <p className="font-[family-name:var(--font-fredoka)] text-[0.9375rem] font-semibold text-[#2D3436] sm:text-base">
-                  24/7 CCTV Monitored
+                  {site.cctvMonitoring
+                    ? "24/7 CCTV Monitored"
+                    : "Verified Pickup Care"}
                 </p>
               </div>
             </div>

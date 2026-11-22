@@ -11,7 +11,7 @@ import {
   useScroll,
 } from "framer-motion";
 import { Menu, MessageCircle, Sparkles, X } from "lucide-react";
-import { getSiteConfig } from "@/data/site-data";
+import type { ExtendedSiteConfig } from "@/lib/cms";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -22,20 +22,23 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function Navbar() {
+export function Navbar({ site }: { site: ExtendedSiteConfig }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { scrollY } = useScroll();
-  const site = getSiteConfig();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 16);
   });
 
   const whatsappUrl = `https://wa.me/${site.contact.whatsappNumber}?text=${encodeURIComponent(
-    "Namaste! I would like to inquire about Kids Berry Kindergarten School in Pichara, Biratnagar-11.",
+    `Namaste! I would like to inquire about ${site.schoolName} in ${site.address.street}.`,
   )}`;
+
+  const nameParts = site.shortName.split(" ");
+  const firstWord = nameParts[0] || "Kids";
+  const restWords = nameParts.slice(1).join(" ") || "Berry";
 
   return (
     <header className="sticky top-0 z-50 w-full">
@@ -57,7 +60,7 @@ export function Navbar() {
             <div className="relative flex h-13 w-13 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#FF6B81]/20 bg-white p-0.5 shadow-xs transition-transform duration-300 group-hover:scale-105">
               <Image
                 src={site.logoPath}
-                alt="Kids Berry Kindergarten School Logo"
+                alt={`${site.schoolName} Logo`}
                 width={48}
                 height={48}
                 className="h-full w-full object-contain"
@@ -66,10 +69,12 @@ export function Navbar() {
             </div>
             <div className="leading-tight">
               <span className="block font-[family-name:var(--font-fredoka)] text-lg font-semibold tracking-tight text-[#E91E63] sm:text-xl">
-                Kids <span className="text-[#5C6BC0]">Berry</span>
+                {firstWord} <span className="text-[#5C6BC0]">{restWords}</span>
               </span>
-              <span className="block text-xs font-semibold uppercase tracking-wider text-[#2D3436] ">
-                Montessori &amp; Daycare • Biratnagar-11
+              <span className="block text-xs font-semibold uppercase tracking-wider text-[#2D3436]">
+                {site.montessoriImplemented ? "Montessori" : "Preschool"}{" "}
+                {site.daycareAvailable ? "& Daycare" : ""} •{" "}
+                {site.address.ward}
               </span>
             </div>
           </Link>
