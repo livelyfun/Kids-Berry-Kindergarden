@@ -54,13 +54,6 @@ const DOCUMENT_SLOTS: UploadedDocSlot[] = [
     hint: "Upload photo or PDF scan of Ward / Municipality birth certificate",
   },
   {
-    key: "immunization_card",
-    label: "Immunization / Vaccination Card",
-    required: false,
-    accept: "image/*,.pdf,application/pdf",
-    hint: "Upload vaccination record photo or PDF",
-  },
-  {
     key: "guardian_id",
     label: "Parent / Guardian Citizenship or ID",
     required: false,
