@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import {
-  isCloudinaryConfigured,
+  getCloudinaryConfigIssue,
   uploadImageToCloudinary,
   uploadMediaToCloudinary,
 } from "@/lib/cloudinary";
+
+// Vercel caps serverless request bodies at ~4.5 MB, so anything larger must be
+// rejected here with a clear message instead of failing with a 413 page.
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_MEDIA_BYTES = 4 * 1024 * 1024;
 
 const ALLOWED_MEDIA_MIME_TYPES = new Set([
   "application/pdf",
@@ -64,23 +69,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const maxBytes = (isMediaMode ? 15 : 8) * 1024 * 1024;
+    const maxBytes = isMediaMode ? MAX_MEDIA_BYTES : MAX_IMAGE_BYTES;
     if (file.size > maxBytes) {
       return NextResponse.json(
         {
-          error: `File must be smaller than ${isMediaMode ? 15 : 8} MB.`,
+          error: `File must be smaller than ${Math.round(
+            maxBytes / (1024 * 1024),
+          )} MB. Please compress or resize it and try again.`,
         },
-        { status: 400 },
+        { status: 413 },
       );
     }
 
-    if (!isCloudinaryConfigured()) {
+    const configIssue = getCloudinaryConfigIssue();
+    if (configIssue) {
       return NextResponse.json(
         {
-          error:
-            "Cloudinary is not configured. Check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in .env.",
+          error: `${configIssue} Fix these in Vercel → Project → Settings → Environment Variables.`,
         },
-        { status: 400 },
+        { status: 503 },
       );
     }
 
