@@ -30,11 +30,11 @@ import type {
 export const SITE_CONFIG: SiteConfig = {
   schoolName: "Kids Berry Kindergarten School",
   shortName: "Kids Berry",
-  schoolType: "Montessori Implemented Pre-school + Daycare",
-  tagline: "Montessori Implemented Pre-school & Loving Daycare in Biratnagar",
+  schoolType: "Montessori Kindergarten & Primary (Up to Grade 2) + Daycare",
+  tagline: "Where Young Minds Blossom • Montessori to Grade 2 in Biratnagar",
   subTagline:
-    "A safe, CCTV-monitored Montessori pre-school and daycare in Pichara, Biratnagar-11 — offering regular classes (9:00 AM – 3:00 PM), after-class care (3:00 PM – 5:00 PM), and nutritious school meals with daily hot milk and fresh fruits.",
-  logoPath: "/images/kids-berry-logo.jpg",
+    "Kids Berry Kindergarten School in Pichara, Biratnagar-11 offers nurturing Montessori pre-school education through Grade 2 (Class Two), full-day daycare, CCTV surveillance, transportation, and healthy daily meals with warm milk and fruits.",
+  logoPath: "https://res.cloudinary.com/m2ns7bvs/image/upload/v1795512895/kids-berry/yafa0vnnrsxatyhzlutv.jpg",
   establishedYear: "2020",
   address: {
     street: "Pichara, Biratnagar-11",
@@ -46,12 +46,12 @@ export const SITE_CONFIG: SiteConfig = {
     landmark: "Peaceful residential campus near Pichara Chowk, Biratnagar-11",
   },
   contact: {
-    primaryPhone: "+977 21-590123",
-    secondaryPhone: "+977 980-1234567",
-    whatsappNumber: "9779801234567",
-    whatsappDisplay: "+977 980-1234567",
-    email: "hello@kidsberrykindergarten.edu.np",
-    admissionsEmail: "admissions@kidsberrykindergarten.edu.np",
+    primaryPhone: "+977 980-4067371",
+    secondaryPhone: "+977 980-1559569",
+    whatsappNumber: "9779804067371",
+    whatsappDisplay: "+977 980-4067371",
+    email: "kidsberryinfo@gmail.com",
+    admissionsEmail: "kidsberryinfo@gmail.com",
   },
   hours: {
     days: "Sunday – Friday",
@@ -63,19 +63,19 @@ export const SITE_CONFIG: SiteConfig = {
     closedOn: "Saturday & Public Holidays",
   },
   social: {
-    facebookUrl: "https://facebook.com",
-    facebookHandle: "@KidsBerryBiratnagar",
-    instagramUrl: "https://instagram.com",
-    instagramHandle: "@kidsberry.biratnagar",
+    facebookUrl: "https://www.facebook.com/kids.berry.montessori",
+    facebookHandle: "@kids.berry.montessori",
+    instagramUrl: "https://www.instagram.com/kidsberry.brt",
+    instagramHandle: "@kidsberry.brt",
   },
   googleMapsEmbedUrl:
     "https://www.google.com/maps?q=Pichara,+Biratnagar-11,+Nepal&output=embed",
   googleMapsLinkUrl:
     "https://www.google.com/maps/search/?api=1&query=Pichara+Biratnagar-11+Nepal",
   heroStats: [
-    { value: "9AM–3PM", label: "Regular Montessori Class", accent: "magenta" },
+    { value: "Playgroup–Grade 2", label: "Pre-school to Primary Tier", accent: "magenta" },
     { value: "3PM–5PM", label: "After-Class Care & Daycare", accent: "teal" },
-    { value: "CCTV", label: "Safe Campus & Meals Provided", accent: "coral" },
+    { value: "CCTV & Meals", label: "Safe Campus & Transportation", accent: "coral" },
   ],
 };
 
@@ -321,6 +321,70 @@ export const PROGRAMS: ProgramItem[] = [
     image: "/images/program-ukg.jpg",
     imageAlt:
       "Senior KG students working with Montessori counting beads and magnifying glasses",
+  },
+  {
+    id: "grade-1",
+    slug: "grade-1",
+    title: "Grade 1 (Class One)",
+    subtitle: "Foundational Primary Learning & Conceptual Mastery",
+    ageGroup: "5.5 – 7 Years",
+    ageEligibility: "Completed UKG / 5.5+ years old",
+    duration: "9:00 AM – 3:00 PM (+ 3–5 PM Care)",
+    classSize: "Max 18 Children",
+    ratio: "1:9 Ratio",
+    schedule: "9:00 AM – 3:00 PM",
+    shortDescription:
+      "A structured, joyful primary curriculum focusing on bilingual language skills (English & Nepali), experiential mathematics, basic sciences, and creative expression.",
+    fullDescription:
+      "Grade 1 at Kids Berry builds a seamless bridge between experiential Montessori foundations and formal primary education. Students cultivate independent inquiry, reading fluency, mathematical logic, and creative projects in a warm, encouraging environment.",
+    highlights: [
+      "Interactive phonics, grammar, creative writing, and bilingual storytelling",
+      "Conceptual mathematics with Montessori bead frames, mental math, and geometry",
+      "General science, environmental exploration, and gardening experiments",
+      "Arts, crafts, music, dance, and daily physical education on campus",
+      "Continuous comprehensive evaluation and caring personal mentorship",
+    ],
+    curriculumAreas: [
+      "Languages (English & Nepali)",
+      "Conceptual Mathematics",
+      "General Science & Social Awareness",
+      "Creative & Cultural Arts",
+    ],
+    accent: "teal",
+    image: "/images/program-grade-1.jpg",
+    imageAlt: "Kids Berry Grade 1 Classroom and Primary Learning in Biratnagar",
+  },
+  {
+    id: "grade-2",
+    slug: "grade-2",
+    title: "Grade 2 (Class Two)",
+    subtitle: "Higher Primary Foundations, Confidence & Creativity",
+    ageGroup: "6.5 – 8 Years",
+    ageEligibility: "Completed Grade 1 / 6.5+ years old",
+    duration: "9:00 AM – 3:00 PM (+ 3–5 PM Care)",
+    classSize: "Max 18 Children",
+    ratio: "1:9 Ratio",
+    schedule: "9:00 AM – 3:00 PM",
+    shortDescription:
+      "Advanced elementary preparation strengthening multi-digit computation, scientific inquiry, critical reading, technology awareness, and cooperative projects.",
+    fullDescription:
+      "Grade 2 at Kids Berry is the graduating primary tier of our school. Students develop profound academic confidence, articulate speaking, and problem-solving abilities preparing them for lifetime scholastic success.",
+    highlights: [
+      "Literature circles, expressive writing, poetry, and public speaking",
+      "Multiplication concepts, practical problem-solving, and data measurement",
+      "Hands-on scientific inquiry, nature observation, and digital literacy basics",
+      "Cultural festivals, drama, athletics, and collaborative group research",
+      "Supportive environment encouraging leadership, kindness, and discipline",
+    ],
+    curriculumAreas: [
+      "Advanced Literacy & Public Speaking",
+      "Applied Mathematics & Practical Logic",
+      "Scientific Inquiry & Nature Cycles",
+      "Global Community & Moral Education",
+    ],
+    accent: "orange",
+    image: "/images/program-grade-2.jpg",
+    imageAlt: "Kids Berry Grade 2 Class Two Students in Biratnagar",
   },
 ];
 
