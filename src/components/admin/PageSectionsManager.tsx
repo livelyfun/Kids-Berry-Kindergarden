@@ -722,7 +722,7 @@ export function PageSectionsManager({
       {/* FRIENDLY CONTEXT-AWARE MODAL */}
       {modalMode && draft && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D3436]/60 p-4 backdrop-blur-xs">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto no-scrollbar rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
             <div className="flex items-center justify-between border-b border-[#2D3436]/8 pb-4">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E91E63]">

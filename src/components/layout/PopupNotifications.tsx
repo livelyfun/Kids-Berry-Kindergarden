@@ -86,7 +86,7 @@ export function PopupNotifications({ popups }: PopupNotificationsProps) {
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-[#FF7A45]/20 bg-white shadow-warm-lg"
+            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto overflow-x-hidden no-scrollbar rounded-[2rem] border border-[#FF7A45]/20 bg-white shadow-warm-lg"
           >
             {/* 6-color Kids Berry top brand accent strip */}
             <div className="grid h-1.5 w-full grid-cols-6">

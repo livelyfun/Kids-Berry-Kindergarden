@@ -435,7 +435,7 @@ export function AdminDashboardClient({
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar px-3 py-4">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -1482,7 +1482,7 @@ export function AdminDashboardClient({
       {/* CREATE / EDIT MODAL */}
       {modal.kind !== "closed" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D3436]/60 p-4 backdrop-blur-xs">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto no-scrollbar rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
             <div className="flex items-center justify-between border-b border-[#2D3436]/8 pb-4">
               <h3 className="font-[family-name:var(--font-fredoka)] text-xl font-semibold text-[#2D3436]">
                 {modal.mode === "create" ? "Create" : "Edit"}{" "}
