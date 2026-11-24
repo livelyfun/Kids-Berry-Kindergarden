@@ -165,6 +165,20 @@ export interface AdminContactInquiry {
   createdAt: string;
 }
 
+export interface AdminPopupNotification {
+  id: string;
+  badge: string | null;
+  title: string;
+  message: string;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  accent: string;
+  sortOrder: number;
+  published: boolean;
+}
+
 export interface AdminInitialData {
   settings: AdminSiteSettings | null;
   programs: AdminProgram[];
@@ -175,4 +189,5 @@ export interface AdminInitialData {
   menu: AdminFoodMenu[];
   sections: AdminPageSection[];
   inquiries: AdminContactInquiry[];
+  popups: AdminPopupNotification[];
 }

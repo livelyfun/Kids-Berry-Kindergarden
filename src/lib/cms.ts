@@ -29,6 +29,7 @@ import type {
   GalleryItem,
   IconName,
   LearningPillar,
+  PopupNotificationItem,
   ProgramItem,
   RoutineItem,
   SiteConfig,
@@ -697,5 +698,27 @@ export async function getPublishedAdmissionFAQs(): Promise<FAQItem[]> {
     }));
   } catch {
     return ADMISSION_FAQS;
+  }
+}
+
+export async function getPublishedPopups(): Promise<PopupNotificationItem[]> {
+  try {
+    const rows = await prisma.popupNotification.findMany({
+      where: { published: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      badge: row.badge || undefined,
+      title: row.title,
+      message: row.message,
+      imageUrl: row.imageUrl || undefined,
+      imageAlt: row.imageAlt || row.title,
+      ctaLabel: row.ctaLabel || undefined,
+      ctaHref: row.ctaHref || undefined,
+      accent: asAccent(row.accent, "magenta"),
+    }));
+  } catch {
+    return [];
   }
 }

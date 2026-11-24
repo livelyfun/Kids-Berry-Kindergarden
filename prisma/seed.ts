@@ -662,6 +662,26 @@ async function main() {
     });
   }
 
+  // Seed initial CMS Popup Notification (if none exist yet)
+  const existingPopupCount = await prisma.popupNotification.count();
+  if (existingPopupCount === 0) {
+    await prisma.popupNotification.create({
+      data: {
+        badge: "Admissions Open",
+        title: "Admissions Open for the New Montessori Session!",
+        message:
+          "Enroll your little one at Kids Berry Kindergarten School in Pichara, Biratnagar-11. Regular Classes (9:00 AM – 3:00 PM), Daycare, After-Class Care (3:00 PM – 5:00 PM), 24/7 CCTV safety, and fresh weekly meals with daily hot milk & fruits.",
+        imageUrl: "/images/hero-classroom.jpg",
+        imageAlt: "Kids Berry Kindergarten School Montessori classroom",
+        ctaLabel: "Book a Campus Visit",
+        ctaHref: "/admissions",
+        accent: "magenta",
+        sortOrder: 1,
+        published: true,
+      },
+    });
+  }
+
   console.log("Kids Berry CMS seed completed successfully.");
 }
 

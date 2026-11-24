@@ -124,6 +124,12 @@ export async function GET(
         });
         return NextResponse.json({ data: items });
       }
+      case "popups": {
+        const items = await prisma.popupNotification.findMany({
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        });
+        return NextResponse.json({ data: items });
+      }
       default:
         return NextResponse.json(
           { error: `Unknown resource: ${resource}` },
@@ -373,6 +379,36 @@ export async function POST(
             iconName: String(body.iconName || "sparkles"),
             accent: String(body.accent || "magenta"),
             metadata: parseJsonObjectOrNull(body.metadata),
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+            published: Boolean(body.published),
+          },
+        });
+        break;
+      }
+
+      case "popups": {
+        const title = String(body.title || "").trim();
+        const message = String(body.message || "").trim();
+        if (!title || !message) {
+          return NextResponse.json(
+            { error: "Title and message are required." },
+            { status: 400 },
+          );
+        }
+        created = await prisma.popupNotification.create({
+          data: {
+            badge: body.badge ? String(body.badge).trim() || null : null,
+            title,
+            message,
+            imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
+            imageAlt: body.imageAlt
+              ? String(body.imageAlt).trim() || title
+              : title,
+            ctaLabel: body.ctaLabel
+              ? String(body.ctaLabel).trim() || null
+              : null,
+            ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
+            accent: String(body.accent || "magenta"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
           },
@@ -813,6 +849,41 @@ async function handleUpdate(
         break;
       }
 
+      case "popups": {
+        updated = await prisma.popupNotification.update({
+          where: { id },
+          data: {
+            ...(body.badge !== undefined && {
+              badge: body.badge ? String(body.badge).trim() || null : null,
+            }),
+            ...(body.title !== undefined && { title: String(body.title).trim() }),
+            ...(body.message !== undefined && {
+              message: String(body.message).trim(),
+            }),
+            ...(body.imageUrl !== undefined && {
+              imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
+            }),
+            ...(body.imageAlt !== undefined && {
+              imageAlt: body.imageAlt ? String(body.imageAlt).trim() || null : null,
+            }),
+            ...(body.ctaLabel !== undefined && {
+              ctaLabel: body.ctaLabel ? String(body.ctaLabel).trim() || null : null,
+            }),
+            ...(body.ctaHref !== undefined && {
+              ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
+            }),
+            ...(body.accent !== undefined && { accent: String(body.accent) }),
+            ...(body.sortOrder !== undefined && {
+              sortOrder: parseIntSafe(body.sortOrder, 0),
+            }),
+            ...(body.published !== undefined && {
+              published: Boolean(body.published),
+            }),
+          },
+        });
+        break;
+      }
+
       default:
         return NextResponse.json(
           { error: `Update not supported for resource: ${resource}` },
@@ -881,6 +952,9 @@ export async function DELETE(
         break;
       case "inquiries":
         await prisma.contactInquiry.delete({ where: { id } });
+        break;
+      case "popups":
+        await prisma.popupNotification.delete({ where: { id } });
         break;
       default:
         return NextResponse.json(

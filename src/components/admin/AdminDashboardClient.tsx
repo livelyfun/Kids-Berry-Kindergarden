@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   Blocks,
   Building2,
   CheckCircle2,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import {
   ACCENT_OPTIONS,
+  AccentSwatchPicker,
   ICON_OPTIONS,
   ItemRow,
   NumberField,
@@ -42,6 +44,7 @@ import type {
   AdminGalleryImage,
   AdminInitialData,
   AdminPageSection,
+  AdminPopupNotification,
   AdminProgram,
   AdminSiteSettings,
   AdminTeamMember,
@@ -58,6 +61,7 @@ type TabId =
   | "testimonials"
   | "team"
   | "sections"
+  | "popups"
   | "inquiries";
 
 type ModalState =
@@ -71,7 +75,8 @@ type ModalState =
       item: Record<string, unknown>;
     }
   | { kind: "team"; mode: "create" | "edit"; item: Record<string, unknown> }
-  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> };
+  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> }
+  | { kind: "popup"; mode: "create" | "edit"; item: Record<string, unknown> };
 
 interface AdminDashboardClientProps {
   adminBasePath: string;
@@ -111,6 +116,9 @@ export function AdminDashboardClient({
   );
   const [inquiries, setInquiries] = useState<AdminContactInquiry[]>(
     initialData.inquiries,
+  );
+  const [popups, setPopups] = useState<AdminPopupNotification[]>(
+    initialData.popups || [],
   );
 
   const visibleSections = sections.filter((s) => s.category !== "benefit");
@@ -161,6 +169,9 @@ export function AdminDashboardClient({
         break;
       case "inquiries":
         setInquiries(data);
+        break;
+      case "popups":
+        setPopups(data);
         break;
     }
   }
@@ -242,6 +253,7 @@ export function AdminDashboardClient({
       testimonial: "testimonials",
       team: "team",
       menu: "menu",
+      popup: "popups",
     };
 
     const resource = resourceMap[modal.kind];
@@ -345,6 +357,12 @@ export function AdminDashboardClient({
       label: "Page Sections",
       icon: <Layers className="h-4 w-4" />,
       count: visibleSections.length,
+    },
+    {
+      id: "popups",
+      label: "Popups",
+      icon: <Bell className="h-4 w-4" />,
+      count: popups.length,
     },
     {
       id: "programs",
@@ -637,6 +655,12 @@ export function AdminDashboardClient({
                       pub: visibleSections.filter((x) => x.published).length,
                       total: visibleSections.length,
                       tab: "sections" as TabId,
+                    },
+                    {
+                      label: "Popups",
+                      pub: popups.filter((x) => x.published).length,
+                      total: popups.length,
+                      tab: "popups" as TabId,
                     },
                     {
                       label: "New Inquiries",
@@ -1288,6 +1312,77 @@ export function AdminDashboardClient({
             </SectionCard>
           )}
 
+          {/* TAB 9B: POPUPS */}
+          {activeTab === "popups" && (
+            <SectionCard
+              title="Popup Notifications"
+              subtitle="Published popups appear automatically whenever a visitor opens or refreshes the website. Multiple published popups cycle in display order."
+              addLabel="Add Popup"
+              onAdd={() =>
+                setModal({
+                  kind: "popup",
+                  mode: "create",
+                  item: {
+                    badge: "Admissions Open",
+                    title: "",
+                    message: "",
+                    imageUrl: "",
+                    imageAlt: "",
+                    ctaLabel: "",
+                    ctaHref: "/admissions",
+                    accent: "magenta",
+                    sortOrder: popups.length + 1,
+                    published: false,
+                  },
+                })
+              }
+            >
+              <div className="space-y-3">
+                {popups.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FFF8F5] p-6 text-center text-sm text-[#78909C]">
+                    No popup notices yet. Click Add Popup to create an admission
+                    or announcement notice.
+                  </p>
+                ) : (
+                  popups.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      title={item.title}
+                      meta={`${item.badge || "Announcement"}${
+                        item.ctaLabel
+                          ? ` • Button: ${item.ctaLabel} (${item.ctaHref || "/"})`
+                          : ""
+                      } • Order ${item.sortOrder}`}
+                      subtitle={item.message}
+                      imageUrl={item.imageUrl || undefined}
+                      published={item.published}
+                      onTogglePublish={() =>
+                        handleTogglePublish("popups", item.id, item.published)
+                      }
+                      onEdit={() =>
+                        setModal({
+                          kind: "popup",
+                          mode: "edit",
+                          item: {
+                            ...item,
+                            badge: item.badge || "",
+                            imageUrl: item.imageUrl || "",
+                            imageAlt: item.imageAlt || "",
+                            ctaLabel: item.ctaLabel || "",
+                            ctaHref: item.ctaHref || "",
+                          },
+                        })
+                      }
+                      onDelete={() =>
+                        handleDelete("popups", item.id, item.title)
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </SectionCard>
+          )}
+
           {/* TAB 10: INQUIRIES */}
           {activeTab === "inquiries" && (
             <div className="rounded-3xl border border-[#2D3436]/8 bg-white p-6 shadow-warm">
@@ -1813,6 +1908,75 @@ function renderModalFields(
             value={String(item.afternoonBooster || "")}
             onChange={(v) => set("afternoonBooster", v)}
           />
+        </>
+      );
+
+    case "popup":
+      return (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField
+              label="Top Badge (optional)"
+              value={String(item.badge || "")}
+              placeholder="e.g., Admissions Open, Holiday Notice"
+              onChange={(v) => set("badge", v)}
+            />
+            <NumberField
+              label="Display Order (lower shows first)"
+              value={Number(item.sortOrder || 0)}
+              onChange={(v) => set("sortOrder", v)}
+            />
+          </div>
+          <TextField
+            label="Popup Headline *"
+            required
+            value={String(item.title || "")}
+            placeholder="e.g., Admissions Open for New Session!"
+            onChange={(v) => set("title", v)}
+          />
+          <TextAreaField
+            label="Announcement Message *"
+            required
+            rows={4}
+            value={String(item.message || "")}
+            placeholder="Write your announcement details for parents..."
+            onChange={(v) => set("message", v)}
+          />
+          <AccentSwatchPicker
+            value={String(item.accent || "magenta")}
+            onChange={(v) => set("accent", v)}
+          />
+          <div>
+            <ImageUploadField
+              label="Banner Image (optional)"
+              value={String(item.imageUrl || "")}
+              onChange={(url) => set("imageUrl", url)}
+              placeholder="Leave blank for text-only notice or upload via Cloudinary"
+            />
+            {Boolean(item.imageUrl) && (
+              <button
+                type="button"
+                onClick={() => set("imageUrl", "")}
+                className="mt-1.5 text-xs font-semibold text-[#E91E63] hover:underline"
+              >
+                Remove banner image
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField
+              label="Action Button Text (optional)"
+              value={String(item.ctaLabel || "")}
+              placeholder="e.g., Book a Campus Visit"
+              onChange={(v) => set("ctaLabel", v)}
+            />
+            <TextField
+              label="Action Button Link (optional)"
+              value={String(item.ctaHref || "")}
+              placeholder="e.g., /admissions or https://..."
+              onChange={(v) => set("ctaHref", v)}
+            />
+          </div>
         </>
       );
   }

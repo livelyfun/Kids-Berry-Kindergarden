@@ -244,3 +244,15 @@ export interface FAQItem {
   question: string;
   answer: string;
 }
+
+export interface PopupNotificationItem {
+  id: string;
+  badge?: string;
+  title: string;
+  message: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  accent: BrandAccent;
+}
