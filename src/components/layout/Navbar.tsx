@@ -20,7 +20,6 @@ const NAV_LINKS = [
   { href: "/facilities", label: "Facilities" },
   { href: "/gallery", label: "Gallery" },
   { href: "/notices", label: "Notices" },
-  { href: "/admissions", label: "Admissions" },
   { href: "/contact", label: "Contact" },
 ];
 
