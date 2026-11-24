@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { contactInquiries, db } from "@/db";
 
 export async function POST(request: Request) {
   try {
@@ -15,8 +15,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const inquiry = await prisma.contactInquiry.create({
-      data: {
+    const [inquiry] = await db
+      .insert(contactInquiries)
+      .values({
         parentName,
         phone,
         email: typeof body?.email === "string" ? body.email.trim() || null : null,
@@ -46,8 +47,8 @@ export async function POST(request: Request) {
             : null,
         status: "NEW",
         published: false,
-      },
-    });
+      })
+      .returning();
 
     return NextResponse.json({ ok: true, id: inquiry.id }, { status: 201 });
   } catch (error) {

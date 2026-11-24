@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { admissionApplications, db } from "@/db";
 
 interface SubmittedDoc {
   key: string;
@@ -59,8 +59,9 @@ export async function POST(request: Request) {
       })
       .filter((d: SubmittedDoc | null): d is SubmittedDoc => Boolean(d));
 
-    const created = await prisma.admissionApplication.create({
-      data: {
+    const [created] = await db
+      .insert(admissionApplications)
+      .values({
         childName,
         childDob,
         childAge: childAge || childDob,
@@ -102,8 +103,8 @@ export async function POST(request: Request) {
         documents: documents as unknown as object[],
         status: "NEW",
         published: false,
-      },
-    });
+      })
+      .returning();
 
     revalidatePath("/admissions");
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });

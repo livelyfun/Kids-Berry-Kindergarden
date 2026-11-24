@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db, users } from "@/db";
 import {
   ADMIN_COOKIE_NAME,
   ensureInitialAdminUser,
@@ -24,9 +25,11 @@ export async function POST(request: Request) {
 
     await ensureInitialAdminUser();
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-    });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
 
     if (!user) {
       return NextResponse.json(

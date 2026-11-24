@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { count } from "drizzle-orm";
+import { db, users } from "@/db";
 
 export const ADMIN_COOKIE_NAME = "kb_admin_session";
 
@@ -73,19 +74,17 @@ export async function getAdminSession(): Promise<AdminTokenPayload | null> {
 }
 
 export async function ensureInitialAdminUser(): Promise<void> {
-  const count = await prisma.user.count();
-  if (count > 0) return;
+  const [res] = await db.select({ value: count() }).from(users);
+  if ((res?.value ?? 0) > 0) return;
 
   const username = (process.env.ADMIN_INITIAL_USERNAME || "kidsadmin").trim();
   const password = process.env.ADMIN_INITIAL_PASSWORD || "kidsadmin@123";
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await prisma.user.create({
-    data: {
-      username,
-      passwordHash,
-      name: "Kids Berry Administrator",
-      role: "ADMIN",
-    },
+  await db.insert(users).values({
+    username,
+    passwordHash,
+    name: "Kids Berry Administrator",
+    role: "ADMIN",
   });
 }

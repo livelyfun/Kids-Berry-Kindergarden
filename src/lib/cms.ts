@@ -1,4 +1,17 @@
-import { prisma } from "@/lib/prisma";
+import { and, asc, desc, eq } from "drizzle-orm";
+import {
+  db,
+  facilities,
+  foodMenus,
+  galleryImages,
+  notices,
+  pageSections,
+  popupNotifications,
+  programs,
+  siteSettings,
+  teamMembers,
+  testimonials,
+} from "@/db";
 import {
   ADMISSION_FAQS,
   ADMISSION_REQUIREMENTS,
@@ -147,9 +160,11 @@ export interface SharedCtaData {
 
 export async function getCmsSiteConfig(): Promise<ExtendedSiteConfig> {
   try {
-    const row = await prisma.siteSettings.findUnique({
-      where: { id: "default" },
-    });
+    const [row] = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.id, "default"))
+      .limit(1);
     if (!row) {
       return {
         ...SITE_CONFIG,
@@ -234,10 +249,17 @@ export async function getCmsSiteConfig(): Promise<ExtendedSiteConfig> {
 
 export async function getPublishedHeroSection(): Promise<HeroSectionData | null> {
   try {
-    const hero = await prisma.pageSection.findFirst({
-      where: { category: "hero", published: true },
-      orderBy: { sortOrder: "asc" },
-    });
+    const [hero] = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "hero"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder))
+      .limit(1);
     if (!hero) return null;
     const meta = asRecord(hero.metadata);
     return {
@@ -276,10 +298,17 @@ export async function getPublishedHeroSection(): Promise<HeroSectionData | null>
 
 export async function getPublishedPhilosophySection(): Promise<PhilosophySectionData | null> {
   try {
-    const sec = await prisma.pageSection.findFirst({
-      where: { category: "philosophy", published: true },
-      orderBy: { sortOrder: "asc" },
-    });
+    const [sec] = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "philosophy"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder))
+      .limit(1);
     if (!sec) return null;
     const meta = asRecord(sec.metadata);
     return {
@@ -309,10 +338,16 @@ export async function getPublishedPhilosophySection(): Promise<PhilosophySection
 
 export async function getPublishedCareGridItems(): Promise<CareGridCardData[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "care-grid", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "care-grid"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => {
       const meta = asRecord(row.metadata);
       return {
@@ -333,10 +368,17 @@ export async function getPublishedCareGridItems(): Promise<CareGridCardData[]> {
 
 export async function getPublishedAboutStory(): Promise<AboutStoryData | null> {
   try {
-    const sec = await prisma.pageSection.findFirst({
-      where: { category: "story", published: true },
-      orderBy: { sortOrder: "asc" },
-    });
+    const [sec] = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "story"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder))
+      .limit(1);
     if (!sec) return null;
     const meta = asRecord(sec.metadata);
     return {
@@ -360,10 +402,17 @@ export async function getPublishedAboutStory(): Promise<AboutStoryData | null> {
 
 export async function getPublishedSharedCta(): Promise<SharedCtaData | null> {
   try {
-    const sec = await prisma.pageSection.findFirst({
-      where: { category: "cta", published: true },
-      orderBy: { sortOrder: "asc" },
-    });
+    const [sec] = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "cta"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder))
+      .limit(1);
     if (!sec) return null;
     return {
       badge: sec.badge || "Admissions Open • Regular & Daycare",
@@ -383,10 +432,16 @@ export async function getPublishedSharedCta(): Promise<SharedCtaData | null> {
 
 export async function getPublishedCareTracks(): Promise<CareTrackItem[]> {
   try {
-    const rows = await prisma.program.findMany({
-      where: { programType: "CARE_TRACK", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(programs)
+      .where(
+        and(
+          eq(programs.programType, "CARE_TRACK"),
+          eq(programs.published, true),
+        ),
+      )
+      .orderBy(asc(programs.sortOrder), asc(programs.createdAt));
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -407,10 +462,16 @@ export async function getPublishedCareTracks(): Promise<CareTrackItem[]> {
 
 export async function getPublishedPrograms(): Promise<ProgramItem[]> {
   try {
-    const rows = await prisma.program.findMany({
-      where: { programType: "ACADEMIC", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(programs)
+      .where(
+        and(
+          eq(programs.programType, "ACADEMIC"),
+          eq(programs.published, true),
+        ),
+      )
+      .orderBy(asc(programs.sortOrder), asc(programs.createdAt));
     return rows.map((row) => ({
       id: row.id,
       slug: row.slug,
@@ -439,13 +500,15 @@ export async function getPublishedFacilities(
   homeOnly = false,
 ): Promise<DetailedFacilityItem[]> {
   try {
-    const rows = await prisma.facility.findMany({
-      where: {
-        published: true,
-        ...(homeOnly ? { showOnHome: true } : {}),
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(facilities)
+      .where(
+        homeOnly
+          ? and(eq(facilities.published, true), eq(facilities.showOnHome, true))
+          : eq(facilities.published, true),
+      )
+      .orderBy(asc(facilities.sortOrder), asc(facilities.createdAt));
     return rows.map((row) => ({
       id: row.id,
       badge: row.badge,
@@ -478,10 +541,11 @@ export async function getPublishedHomeFacilities(): Promise<FacilityItem[]> {
 
 export async function getPublishedGalleryItems(): Promise<GalleryItem[]> {
   try {
-    const rows = await prisma.galleryImage.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
+    const rows = await db
+      .select()
+      .from(galleryImages)
+      .where(eq(galleryImages.published, true))
+      .orderBy(asc(galleryImages.sortOrder), desc(galleryImages.createdAt));
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -505,10 +569,11 @@ export async function getPublishedGalleryItems(): Promise<GalleryItem[]> {
 
 export async function getPublishedTestimonials(): Promise<TestimonialItem[]> {
   try {
-    const rows = await prisma.testimonial.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
+    const rows = await db
+      .select()
+      .from(testimonials)
+      .where(eq(testimonials.published, true))
+      .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt));
     return rows.map((row) => ({
       id: row.id,
       parentName: row.parentName,
@@ -527,10 +592,11 @@ export async function getPublishedTestimonials(): Promise<TestimonialItem[]> {
 
 export async function getPublishedTeamMembers(): Promise<TeamMember[]> {
   try {
-    const rows = await prisma.teamMember.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(teamMembers)
+      .where(eq(teamMembers.published, true))
+      .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.createdAt));
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -549,10 +615,11 @@ export async function getPublishedTeamMembers(): Promise<TeamMember[]> {
 
 export async function getPublishedWeeklyMenu(): Promise<WeeklyMenuItem[]> {
   try {
-    const rows = await prisma.foodMenu.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(foodMenus)
+      .where(eq(foodMenus.published, true))
+      .orderBy(asc(foodMenus.sortOrder), asc(foodMenus.createdAt));
     return rows.map((row) => ({
       id: row.id,
       day: row.day,
@@ -568,10 +635,16 @@ export async function getPublishedWeeklyMenu(): Promise<WeeklyMenuItem[]> {
 
 export async function getPublishedCoreValues(): Promise<ValueItem[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "value", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "value"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -586,10 +659,16 @@ export async function getPublishedCoreValues(): Promise<ValueItem[]> {
 
 export async function getPublishedLearningPillars(): Promise<LearningPillar[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "pillar", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "pillar"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => {
       const meta = asRecord(row.metadata);
       return {
@@ -609,10 +688,16 @@ export async function getPublishedLearningPillars(): Promise<LearningPillar[]> {
 
 export async function getPublishedDailyRoutine(): Promise<RoutineItem[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "routine", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "routine"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => ({
       id: row.id,
       time: row.subtitle || row.badge || "",
@@ -628,10 +713,16 @@ export async function getPublishedDailyRoutine(): Promise<RoutineItem[]> {
 
 export async function getPublishedAdmissionSteps(): Promise<AdmissionStep[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "admission-step", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "admission-step"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row, index) => ({
       stepNumber: row.badge || `0${index + 1}`,
       title: row.title,
@@ -648,10 +739,16 @@ export async function getPublishedAdmissionRequirements(): Promise<
   AdmissionRequirement[]
 > {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "admission-req", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "admission-req"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => {
       const meta = asRecord(row.metadata);
       return {
@@ -670,10 +767,16 @@ export async function getPublishedAgeEligibility(): Promise<
   AgeEligibilityRow[]
 > {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "age-row", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "age-row"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => ({
       id: row.id,
       program: row.title,
@@ -689,10 +792,16 @@ export async function getPublishedAgeEligibility(): Promise<
 
 export async function getPublishedAdmissionFAQs(): Promise<FAQItem[]> {
   try {
-    const rows = await prisma.pageSection.findMany({
-      where: { category: "faq", published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    const rows = await db
+      .select()
+      .from(pageSections)
+      .where(
+        and(
+          eq(pageSections.category, "faq"),
+          eq(pageSections.published, true),
+        ),
+      )
+      .orderBy(asc(pageSections.sortOrder), asc(pageSections.createdAt));
     return rows.map((row) => ({
       id: row.id,
       question: row.title,
@@ -705,10 +814,14 @@ export async function getPublishedAdmissionFAQs(): Promise<FAQItem[]> {
 
 export async function getPublishedPopups(): Promise<PopupNotificationItem[]> {
   try {
-    const rows = await prisma.popupNotification.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
+    const rows = await db
+      .select()
+      .from(popupNotifications)
+      .where(eq(popupNotifications.published, true))
+      .orderBy(
+        asc(popupNotifications.sortOrder),
+        desc(popupNotifications.createdAt),
+      );
     return rows.map((row) => ({
       id: row.id,
       badge: row.badge || undefined,
@@ -754,10 +867,11 @@ function asAttachmentType(
 
 export async function getPublishedNotices(): Promise<NoticeItem[]> {
   try {
-    const rows = await prisma.notice.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
+    const rows = await db
+      .select()
+      .from(notices)
+      .where(eq(notices.published, true))
+      .orderBy(asc(notices.sortOrder), desc(notices.createdAt));
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -779,10 +893,16 @@ export async function getPublishedNotices(): Promise<NoticeItem[]> {
 
 export async function getHighlightedNotices(): Promise<NoticeItem[]> {
   try {
-    const rows = await prisma.notice.findMany({
-      where: { published: true, highlightOnHome: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
+    const rows = await db
+      .select()
+      .from(notices)
+      .where(
+        and(
+          eq(notices.published, true),
+          eq(notices.highlightOnHome, true),
+        ),
+      )
+      .orderBy(asc(notices.sortOrder), desc(notices.createdAt));
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
