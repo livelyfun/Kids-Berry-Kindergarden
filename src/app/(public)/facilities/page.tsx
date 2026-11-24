@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import {
   Apple,
-  ArrowRight,
-  Cctv,
   CheckCircle2,
-  Clock,
   Coffee,
-  ShieldCheck,
-  Sparkles,
   Utensils,
 } from "lucide-react";
 import {
@@ -204,117 +198,6 @@ export default async function FacilitiesPage() {
           </div>
         </section>
       )}
-
-      {/* 3. CCTV Security & Daycare / After-School Care Spotlight */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <ScrollReveal direction="left">
-            <div className="h-full overflow-hidden rounded-[2rem] border border-[#E91E63]/15 bg-white shadow-editorial">
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#FFF1EB]">
-                <Image
-                  src="/images/gallery-art.jpg"
-                  alt={`Safe supervised creative activity space monitored under CCTV at ${site.shortName}`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-8">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1EB] text-[#E91E63]">
-                    <Cctv className="h-6 w-6" />
-                  </span>
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#E91E63]">
-                      Campus Security
-                    </span>
-                    <h2 className="text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
-                      Complete CCTV Monitoring &amp; Safe Gate Policy
-                    </h2>
-                  </div>
-                </div>
-                <p className="mt-4 text-[0.9375rem] font-normal leading-[1.68] text-[#78909C]">
-                  Every classroom, corridor, dining corner, and outdoor play area
-                  at {site.schoolName} is actively covered by HD CCTV cameras.
-                  Combined with trained female caregivers and strict guardian
-                  verification at dismissal, safety never takes a break.
-                </p>
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {[
-                    "Classrooms & Daycare rooms monitored",
-                    "Play garden & entry gates covered",
-                    "Verified parent/guardian pickup cards",
-                    "Daily toy & surface sanitization",
-                  ].map((pt) => (
-                    <div
-                      key={pt}
-                      className="flex items-center gap-2 rounded-2xl bg-[#FFF8F5] px-3.5 py-2.5 text-xs font-semibold text-[#2D3436]"
-                    >
-                      <ShieldCheck className="h-4 w-4 shrink-0 text-[#26A69A]" />
-                      <span>{pt}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal direction="right" delay={0.1}>
-            <div className="h-full overflow-hidden rounded-[2rem] border border-[#26A69A]/20 bg-[#26A69A]/8 shadow-editorial">
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#FFF1EB]">
-                <Image
-                  src="/images/program-ukg.jpg"
-                  alt="Supervised afternoon learning and calm Daycare activities until 5 PM"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-8">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#26A69A] shadow-sm">
-                    <Clock className="h-6 w-6" />
-                  </span>
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#26A69A]">
-                      Extended Family Support
-                    </span>
-                    <h2 className="text-[1.35rem] font-semibold leading-[1.28] text-[#2D3436] sm:text-[1.55rem]">
-                      Daycare &amp; After-Class Care ({site.hours.afterClassCareTime})
-                    </h2>
-                  </div>
-                </div>
-                <p className="mt-4 text-[0.9375rem] font-normal leading-[1.68] text-[#78909C]">
-                  Regular classes run from{" "}
-                  <strong className="text-[#2D3436]">
-                    {site.hours.regularClassTime}
-                  </strong>
-                  , while our After-Class Care runs seamlessly from{" "}
-                  <strong className="text-[#2D3436]">
-                    {site.hours.afterClassCareTime}
-                  </strong>
-                  . Children enjoy cozy nap cots (for full-day Daycare), warm
-                  milk and fruits, puzzle play, and gentle care until pickup.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Link
-                    href="/programs#care-timings"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#26A69A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#26A69A]/90"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span>Compare Care Schedules</span>
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-2 rounded-full border border-[#26A69A]/30 bg-white px-6 py-3 text-sm font-semibold text-[#26A69A] hover:bg-[#FFF8F5]"
-                  >
-                    <span>Inquire Now</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
 
       <CtaBanner
         badge="Inspect Our Campus Yourself"
