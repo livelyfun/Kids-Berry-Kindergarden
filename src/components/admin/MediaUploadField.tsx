@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { FileText, Image as ImageIcon, Loader2, Paperclip, Upload, X } from "lucide-react";
+import { prepareImageForUpload } from "@/lib/prepare-image-upload";
 
 interface MediaUploadFieldProps {
   label: string;
@@ -47,26 +48,45 @@ export function MediaUploadField({
     setUploadSuccess("");
 
     try {
+      const prepared = file.type.startsWith("image/")
+        ? await prepareImageForUpload(file)
+        : file;
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", prepared);
       formData.append("mode", "media");
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+
+      const rawBody = await res.text();
+      interface UploadResponse {
+        url?: string;
+        error?: string;
+        mediaType?: string;
+        fileName?: string;
+      }
+      let data: UploadResponse | null = null;
+      try {
+        data = JSON.parse(rawBody) as UploadResponse;
+      } catch {
+        data = null;
+      }
 
       if (!res.ok || !data?.url) {
         setUploadError(
           data?.error ||
-            "Cloudinary upload failed. Verify CLOUDINARY_* credentials or paste a file URL below.",
+            (res.status === 413
+              ? "File is too large. Please choose a file smaller than 4 MB."
+              : "Cloudinary upload failed. Verify CLOUDINARY_* credentials or paste a file URL below."),
         );
       } else {
         onChange({
           attachmentUrl: String(data.url),
           attachmentType: String(data.mediaType || "file"),
-          attachmentName: mediaName || String(data.fileName || file.name),
+          attachmentName: mediaName || String(data.fileName || prepared.name),
         });
         setUploadSuccess("Uploaded to Cloudinary");
       }

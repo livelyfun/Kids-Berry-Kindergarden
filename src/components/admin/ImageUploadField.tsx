@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Image as ImageIcon, Loader2, Upload } from "lucide-react";
+import { prepareImageForUpload } from "@/lib/prepare-image-upload";
 
 interface ImageUploadFieldProps {
   label: string;
@@ -30,19 +31,29 @@ export function ImageUploadField({
     setUploadSuccess("");
 
     try {
+      const prepared = await prepareImageForUpload(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", prepared);
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+
+      const rawBody = await res.text();
+      let data: { url?: string; error?: string } | null = null;
+      try {
+        data = JSON.parse(rawBody) as { url?: string; error?: string };
+      } catch {
+        data = null;
+      }
 
       if (!res.ok || !data?.url) {
         setUploadError(
           data?.error ||
-            "Cloudinary upload failed. Verify CLOUDINARY_* credentials in .env or paste an image URL below.",
+            (res.status === 413
+              ? "Image is too large. Please choose a smaller image."
+              : "Cloudinary upload failed. Verify CLOUDINARY_* credentials in Vercel or paste an image URL below."),
         );
       } else {
         onChange(data.url);
