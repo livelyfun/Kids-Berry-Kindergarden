@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { href: "/facilities", label: "Facilities" },
   { href: "/gallery", label: "Gallery" },
   { href: "/notices", label: "Notices" },
+  { href: "/admissions", label: "Admissions" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -117,15 +118,13 @@ export function Navbar({ site }: { site: ExtendedSiteConfig }) {
 
           {/* Desktop CTA & Mobile Menu Toggle */}
           <div className="flex items-center gap-3">
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/admissions#admission-form"
               className="hidden items-center gap-2 rounded-full bg-gradient-to-r from-[#FF7A45] via-[#FF6B81] to-[#E91E63] px-5 py-2.5 text-sm font-semibold text-white shadow-warm transition-transform duration-200 hover:-translate-y-0.5 hover:opacity-95 sm:inline-flex"
             >
               <Sparkles className="h-4 w-4" />
-              <span>Book a Visit</span>
-            </a>
+              <span>Apply for Admission</span>
+            </Link>
 
             <button
               type="button"
@@ -179,12 +178,12 @@ export function Navbar({ site }: { site: ExtendedSiteConfig }) {
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-2.5 border-t border-[#FF7A45]/15 pt-4 sm:grid-cols-2">
                   <Link
-                    href="/contact"
+                    href="/admissions#admission-form"
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF7A45] via-[#FF6B81] to-[#E91E63] px-4 py-3 text-sm font-semibold text-white"
                   >
                     <Sparkles className="h-4 w-4" />
-                    <span>Visit / Contact Us</span>
+                    <span>Apply for Admission</span>
                   </Link>
                   <a
                     href={whatsappUrl}

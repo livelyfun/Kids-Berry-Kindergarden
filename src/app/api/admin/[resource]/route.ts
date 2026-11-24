@@ -125,6 +125,12 @@ export async function GET(
         });
         return NextResponse.json({ data: items });
       }
+      case "admissions": {
+        const items = await prisma.admissionApplication.findMany({
+          orderBy: { createdAt: "desc" },
+        });
+        return NextResponse.json({ data: items });
+      }
       case "popups": {
         const items = await prisma.popupNotification.findMany({
           orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -898,6 +904,19 @@ async function handleUpdate(
         break;
       }
 
+      case "admissions": {
+        updated = await prisma.admissionApplication.update({
+          where: { id },
+          data: {
+            ...(body.status !== undefined && { status: String(body.status) }),
+            ...(body.published !== undefined && {
+              published: Boolean(body.published),
+            }),
+          },
+        });
+        break;
+      }
+
 
       case "popups": {
         updated = await prisma.popupNotification.update({
@@ -1049,6 +1068,9 @@ export async function DELETE(
         break;
       case "inquiries":
         await prisma.contactInquiry.delete({ where: { id } });
+        break;
+      case "admissions":
+        await prisma.admissionApplication.delete({ where: { id } });
         break;
       case "popups":
         await prisma.popupNotification.delete({ where: { id } });

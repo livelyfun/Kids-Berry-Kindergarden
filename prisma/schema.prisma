@@ -273,3 +273,36 @@ model Notice {
   @@index([published, highlightOnHome, sortOrder])
   @@index([category, published])
 }
+
+// 13. AdmissionApplication (Online Student Admission Applications & Uploaded Documents)
+model AdmissionApplication {
+  id                String   @id @default(cuid())
+  childName         String
+  childDob          String
+  childAge          String
+  childGender       String   @default("")
+  program           String
+  preferredCare     String   @default("Regular Class (9:00 AM – 3:00 PM)")
+  transportRequired Boolean  @default(false)
+  mealsRequired     Boolean  @default(true)
+  previousSchool    String?
+  medicalNotes      String?  @db.Text
+
+  parentName        String
+  relation          String   @default("Parent")
+  phone             String
+  secondaryPhone    String?
+  email             String?
+  address           String
+  message           String?  @db.Text
+
+  // Array of { key: string; label: string; url: string; fileType: "image" | "pdf" | "file"; fileName: string }
+  documents         Json
+
+  status            String   @default("NEW")
+  published         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status, createdAt])
+}

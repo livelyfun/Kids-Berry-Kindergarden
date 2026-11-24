@@ -78,10 +78,10 @@ export async function CtaBanner({
 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row lg:flex-col xl:flex-row">
               <Link
-                href="/contact"
+                href="/admissions#admission-form"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[#E91E63] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FFF8F5]"
               >
-                <span>Contact &amp; Directions</span>
+                <span>Apply for Admission</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a

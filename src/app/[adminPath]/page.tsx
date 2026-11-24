@@ -37,6 +37,7 @@ export default async function AdminDashboardPage({
     menu,
     sections,
     inquiries,
+    admissions,
     popups,
     notices,
   ] = await Promise.all([
@@ -65,6 +66,9 @@ export default async function AdminDashboardPage({
     prisma.contactInquiry.findMany({
       orderBy: { createdAt: "desc" },
     }),
+    prisma.admissionApplication.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.popupNotification.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
@@ -84,6 +88,7 @@ export default async function AdminDashboardPage({
       menu,
       sections,
       inquiries,
+      admissions,
       popups,
       notices,
     }),
