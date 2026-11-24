@@ -3,6 +3,8 @@ import crypto from "crypto";
 export interface CloudinaryUploadResult {
   url: string;
   publicId: string;
+  resourceType?: string;
+  format?: string;
   width?: number;
   height?: number;
 }
@@ -21,9 +23,10 @@ export function isCloudinaryConfigured(): boolean {
   );
 }
 
-export async function uploadImageToCloudinary(
+async function uploadToCloudinaryEndpoint(
   file: File,
-  folder = "kids-berry",
+  folder: string,
+  resourceType: "image" | "auto",
 ): Promise<CloudinaryUploadResult> {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim() || "";
   const apiKey = process.env.CLOUDINARY_API_KEY?.trim() || "";
@@ -49,7 +52,7 @@ export async function uploadImageToCloudinary(
   formData.append("signature", signature);
 
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType}/upload`,
     {
       method: "POST",
       body: formData,
@@ -67,7 +70,24 @@ export async function uploadImageToCloudinary(
   return {
     url: String(data.secure_url),
     publicId: String(data.public_id || ""),
+    resourceType:
+      typeof data.resource_type === "string" ? data.resource_type : undefined,
+    format: typeof data.format === "string" ? data.format : undefined,
     width: typeof data.width === "number" ? data.width : undefined,
     height: typeof data.height === "number" ? data.height : undefined,
   };
+}
+
+export async function uploadImageToCloudinary(
+  file: File,
+  folder = "kids-berry",
+): Promise<CloudinaryUploadResult> {
+  return uploadToCloudinaryEndpoint(file, folder, "image");
+}
+
+export async function uploadMediaToCloudinary(
+  file: File,
+  folder = "kids-berry",
+): Promise<CloudinaryUploadResult> {
+  return uploadToCloudinaryEndpoint(file, folder, "auto");
 }

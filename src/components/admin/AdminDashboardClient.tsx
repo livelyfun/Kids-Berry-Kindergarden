@@ -9,6 +9,7 @@ import {
   Building2,
   CheckCircle2,
   ExternalLink,
+  FileText,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Star,
   Trash2,
   Users,
   Utensils,
@@ -36,6 +38,7 @@ import {
   TextField,
 } from "@/components/admin/AdminFormPrimitives";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+import { MediaUploadField } from "@/components/admin/MediaUploadField";
 import { PageSectionsManager } from "@/components/admin/PageSectionsManager";
 import type {
   AdminContactInquiry,
@@ -43,6 +46,7 @@ import type {
   AdminFoodMenu,
   AdminGalleryImage,
   AdminInitialData,
+  AdminNotice,
   AdminPageSection,
   AdminPopupNotification,
   AdminProgram,
@@ -62,6 +66,7 @@ type TabId =
   | "team"
   | "sections"
   | "popups"
+  | "notices"
   | "inquiries";
 
 type ModalState =
@@ -76,7 +81,8 @@ type ModalState =
     }
   | { kind: "team"; mode: "create" | "edit"; item: Record<string, unknown> }
   | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> }
-  | { kind: "popup"; mode: "create" | "edit"; item: Record<string, unknown> };
+  | { kind: "popup"; mode: "create" | "edit"; item: Record<string, unknown> }
+  | { kind: "notice"; mode: "create" | "edit"; item: Record<string, unknown> };
 
 interface AdminDashboardClientProps {
   adminBasePath: string;
@@ -119,6 +125,9 @@ export function AdminDashboardClient({
   );
   const [popups, setPopups] = useState<AdminPopupNotification[]>(
     initialData.popups || [],
+  );
+  const [notices, setNotices] = useState<AdminNotice[]>(
+    initialData.notices || [],
   );
 
   const visibleSections = sections.filter((s) => s.category !== "benefit");
@@ -172,6 +181,9 @@ export function AdminDashboardClient({
         break;
       case "popups":
         setPopups(data);
+        break;
+      case "notices":
+        setNotices(data);
         break;
     }
   }
@@ -254,6 +266,7 @@ export function AdminDashboardClient({
       team: "team",
       menu: "menu",
       popup: "popups",
+      notice: "notices",
     };
 
     const resource = resourceMap[modal.kind];
@@ -283,6 +296,32 @@ export function AdminDashboardClient({
       showToast("error", "Network error while saving.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleToggleNoticeHighlight(
+    id: string,
+    currentHighlighted: boolean,
+  ) {
+    try {
+      const res = await fetch("/api/admin/notices", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, highlightOnHome: !currentHighlighted }),
+      });
+      if (!res.ok) {
+        showToast("error", "Failed to update homepage highlight.");
+        return;
+      }
+      await refreshResource("notices");
+      showToast(
+        "success",
+        !currentHighlighted
+          ? "Pinned to homepage highlights."
+          : "Removed from homepage highlights.",
+      );
+    } catch {
+      showToast("error", "Network error while toggling highlight.");
     }
   }
 
@@ -363,6 +402,12 @@ export function AdminDashboardClient({
       label: "Popups",
       icon: <Bell className="h-4 w-4" />,
       count: popups.length,
+    },
+    {
+      id: "notices",
+      label: "Notices & Exams",
+      icon: <FileText className="h-4 w-4" />,
+      count: notices.length,
     },
     {
       id: "programs",
@@ -661,6 +706,12 @@ export function AdminDashboardClient({
                       pub: popups.filter((x) => x.published).length,
                       total: popups.length,
                       tab: "popups" as TabId,
+                    },
+                    {
+                      label: "Notices & Exams",
+                      pub: notices.filter((x) => x.published).length,
+                      total: notices.length,
+                      tab: "notices" as TabId,
                     },
                     {
                       label: "New Inquiries",
@@ -1383,6 +1434,117 @@ export function AdminDashboardClient({
             </SectionCard>
           )}
 
+          {/* TAB 9C: NOTICES & EXAMS */}
+          {activeTab === "notices" && (
+            <SectionCard
+              title="Notices, Exam Details & Offers"
+              subtitle="Publish school circulars, exam routines, admission offers, and holiday notices with optional PDF or image attachments. Highlight important ones on the Homepage."
+              addLabel="Add Notice"
+              onAdd={() =>
+                setModal({
+                  kind: "notice",
+                  mode: "create",
+                  item: {
+                    category: "notice",
+                    title: "",
+                    summary: "",
+                    content: "",
+                    noticeDate: new Date().toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "2-digit",
+                      year: "numeric",
+                    }),
+                    attachmentUrl: "",
+                    attachmentType: "",
+                    attachmentName: "",
+                    accent: "magenta",
+                    highlightOnHome: true,
+                    sortOrder: notices.length + 1,
+                    published: false,
+                  },
+                })
+              }
+            >
+              <div className="space-y-3">
+                {notices.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FFF8F5] p-6 text-center text-sm text-[#78909C]">
+                    No notices yet. Click Add Notice to publish a notice, exam
+                    detail, or special offer.
+                  </p>
+                ) : (
+                  notices.map((item) => (
+                    <div key={item.id} className="space-y-2">
+                      <ItemRow
+                        title={item.title}
+                        meta={`${item.category.toUpperCase()}${
+                          item.noticeDate ? ` • ${item.noticeDate}` : ""
+                        }${
+                          item.attachmentUrl
+                            ? ` • Attachment: ${(item.attachmentType || "file").toUpperCase()}`
+                            : ""
+                        }${item.highlightOnHome ? " • ★ Highlighted on Home" : ""}`}
+                        subtitle={item.summary}
+                        imageUrl={
+                          item.attachmentType === "image" && item.attachmentUrl
+                            ? item.attachmentUrl
+                            : undefined
+                        }
+                        published={item.published}
+                        onTogglePublish={() =>
+                          handleTogglePublish("notices", item.id, item.published)
+                        }
+                        onEdit={() =>
+                          setModal({
+                            kind: "notice",
+                            mode: "edit",
+                            item: {
+                              ...item,
+                              attachmentUrl: item.attachmentUrl || "",
+                              attachmentType: item.attachmentType || "",
+                              attachmentName: item.attachmentName || "",
+                            },
+                          })
+                        }
+                        onDelete={() =>
+                          handleDelete("notices", item.id, item.title)
+                        }
+                      />
+                      <div className="flex justify-end px-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleToggleNoticeHighlight(
+                              item.id,
+                              item.highlightOnHome,
+                            )
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                            item.highlightOnHome
+                              ? "border-[#FF7A45]/40 bg-[#FFF1EB] text-[#E91E63] hover:bg-[#FFF8F5]"
+                              : "border-[#2D3436]/12 bg-white text-[#78909C] hover:border-[#FF7A45] hover:text-[#FF7A45]"
+                          }`}
+                        >
+                          <Star
+                            className={`h-3 w-3 ${
+                              item.highlightOnHome
+                                ? "fill-[#FF7A45] text-[#FF7A45]"
+                                : ""
+                            }`}
+                          />
+                          <span>
+                            {item.highlightOnHome
+                              ? "Pinned to Homepage (Click to Unpin)"
+                              : "Highlight on Homepage"}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </SectionCard>
+          )}
+
           {/* TAB 10: INQUIRIES */}
           {activeTab === "inquiries" && (
             <div className="rounded-3xl border border-[#2D3436]/8 bg-white p-6 shadow-warm">
@@ -1977,6 +2139,87 @@ function renderModalFields(
               onChange={(v) => set("ctaHref", v)}
             />
           </div>
+        </>
+      );
+
+    case "notice":
+      return (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SelectField
+              label="Category *"
+              value={String(item.category || "notice")}
+              options={[
+                { value: "notice", label: "General Notice" },
+                { value: "exam", label: "Exam Details" },
+                { value: "offer", label: "Offer / Discount" },
+                { value: "event", label: "School Event" },
+                { value: "holiday", label: "Holiday Notice" },
+              ]}
+              onChange={(v) => set("category", v)}
+            />
+            <TextField
+              label="Date / Period Label"
+              value={String(item.noticeDate || "")}
+              placeholder="e.g., Nov 24, 2026"
+              onChange={(v) => set("noticeDate", v)}
+            />
+            <NumberField
+              label="Display Order"
+              value={Number(item.sortOrder || 0)}
+              onChange={(v) => set("sortOrder", v)}
+            />
+          </div>
+          <TextField
+            label="Notice Title *"
+            required
+            value={String(item.title || "")}
+            placeholder="e.g., First Term Assessment Schedule"
+            onChange={(v) => set("title", v)}
+          />
+          <TextAreaField
+            label="Short Summary *"
+            required
+            rows={2}
+            value={String(item.summary || "")}
+            placeholder="Brief 1-2 line summary shown on cards..."
+            onChange={(v) => set("summary", v)}
+          />
+          <TextAreaField
+            label="Full Notice Details *"
+            required
+            rows={4}
+            value={String(item.content || "")}
+            placeholder="Full circular text, exam routine details, or offer instructions..."
+            onChange={(v) => set("content", v)}
+          />
+          <MediaUploadField
+            label="Attachment: PDF, Image, or Document (optional)"
+            url={String(item.attachmentUrl || "")}
+            mediaType={String(item.attachmentType || "")}
+            mediaName={String(item.attachmentName || "")}
+            onChange={(next) =>
+              update({
+                ...item,
+                attachmentUrl: next.attachmentUrl,
+                attachmentType: next.attachmentType,
+                attachmentName: next.attachmentName,
+              })
+            }
+          />
+          <AccentSwatchPicker
+            value={String(item.accent || "magenta")}
+            onChange={(v) => set("accent", v)}
+          />
+          <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[#FF7A45]/25 bg-[#FFF8F5] px-4 py-3 text-xs font-semibold text-[#2D3436]">
+            <input
+              type="checkbox"
+              checked={Boolean(item.highlightOnHome)}
+              onChange={(e) => set("highlightOnHome", e.target.checked)}
+              className="h-4 w-4 accent-[#E91E63]"
+            />
+            <span>Highlight this notice on Homepage</span>
+          </label>
         </>
       );
   }

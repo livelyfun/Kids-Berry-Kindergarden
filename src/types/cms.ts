@@ -256,3 +256,26 @@ export interface PopupNotificationItem {
   ctaHref?: string;
   accent: BrandAccent;
 }
+
+export type NoticeCategory =
+  | "all"
+  | "notice"
+  | "exam"
+  | "offer"
+  | "event"
+  | "holiday";
+
+export interface NoticeItem {
+  id: string;
+  title: string;
+  category: Exclude<NoticeCategory, "all">;
+  summary: string;
+  content: string;
+  noticeDate: string;
+  attachmentUrl?: string;
+  attachmentType?: "image" | "pdf" | "file";
+  attachmentName?: string;
+  accent: BrandAccent;
+  highlightOnHome: boolean;
+  createdAt: string;
+}

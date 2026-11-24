@@ -96,6 +96,7 @@ export function Footer({ site, programs }: FooterProps) {
                 { href: "/programs", label: "Programs & Care Timings" },
                 { href: "/facilities", label: "Facilities, CCTV & Food Menu" },
                 { href: "/gallery", label: "Campus Photo Gallery" },
+                { href: "/notices", label: "Notices, Exams & Offers" },
                 { href: "/admissions", label: "Admissions Information" },
                 { href: "/contact", label: "Contact & Directions" },
               ].map((link) => (

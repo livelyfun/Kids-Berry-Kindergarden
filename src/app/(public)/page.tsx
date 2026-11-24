@@ -10,10 +10,12 @@ import {
 import { CareScheduleSwitcher } from "@/components/sections/CareScheduleSwitcher";
 import { CtaBanner } from "@/components/sections/CtaBanner";
 import { HomeHero } from "@/components/sections/HomeHero";
+import { HomeHighlightedNotices } from "@/components/sections/HomeHighlightedNotices";
 import { ParentReviewsShowcase } from "@/components/sections/ParentReviewsShowcase";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   getCmsSiteConfig,
+  getHighlightedNotices,
   getPublishedCareGridItems,
   getPublishedCareTracks,
   getPublishedHeroSection,
@@ -29,6 +31,7 @@ export default async function HomePage() {
   const [
     site,
     hero,
+    highlightedNotices,
     philosophy,
     careGridItems,
     careTracks,
@@ -37,6 +40,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     getCmsSiteConfig(),
     getPublishedHeroSection(),
+    getHighlightedNotices(),
     getPublishedPhilosophySection(),
     getPublishedCareGridItems(),
     getPublishedCareTracks(),
@@ -52,6 +56,11 @@ export default async function HomePage() {
     <>
       {/* 1. CINEMATIC FULL-WIDTH HERO + UNIFIED TIMINGS DOCK */}
       {hero && <HomeHero hero={hero} site={site} whatsappUrl={whatsappUrl} />}
+
+      {/* 1B. HIGHLIGHTED NOTICES, EXAMS & OFFERS FROM CMS */}
+      {highlightedNotices.length > 0 && (
+        <HomeHighlightedNotices notices={highlightedNotices} />
+      )}
 
       {/* 2. EDITORIAL MONTESSORI PROMISE SPREAD */}
       {philosophy && (

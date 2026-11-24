@@ -38,6 +38,7 @@ export default async function AdminDashboardPage({
     sections,
     inquiries,
     popups,
+    notices,
   ] = await Promise.all([
     prisma.siteSettings.findUnique({ where: { id: "default" } }),
     prisma.program.findMany({
@@ -67,6 +68,9 @@ export default async function AdminDashboardPage({
     prisma.popupNotification.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
+    prisma.notice.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   const initialData = JSON.parse(
@@ -81,6 +85,7 @@ export default async function AdminDashboardPage({
       sections,
       inquiries,
       popups,
+      notices,
     }),
   );
 

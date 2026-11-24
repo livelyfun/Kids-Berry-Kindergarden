@@ -251,3 +251,25 @@ model PopupNotification {
 
   @@index([published, sortOrder])
 }
+
+// 12. Notice (CMS-driven Notices, Exam Details, Offers, Events & Holidays with PDF/Image media)
+model Notice {
+  id              String   @id @default(cuid())
+  title           String
+  category        String   @default("notice") // "notice" | "exam" | "offer" | "event" | "holiday"
+  summary         String
+  content         String   @db.Text
+  noticeDate      String   @default("")
+  attachmentUrl   String?
+  attachmentType  String?  // "image" | "pdf" | "file"
+  attachmentName  String?
+  accent          String   @default("magenta")
+  highlightOnHome Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([published, highlightOnHome, sortOrder])
+  @@index([category, published])
+}

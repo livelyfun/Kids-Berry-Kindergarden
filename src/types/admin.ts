@@ -179,6 +179,23 @@ export interface AdminPopupNotification {
   published: boolean;
 }
 
+export interface AdminNotice {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string;
+  noticeDate: string;
+  attachmentUrl: string | null;
+  attachmentType: string | null;
+  attachmentName: string | null;
+  accent: string;
+  highlightOnHome: boolean;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+}
+
 export interface AdminInitialData {
   settings: AdminSiteSettings | null;
   programs: AdminProgram[];
@@ -190,4 +207,5 @@ export interface AdminInitialData {
   sections: AdminPageSection[];
   inquiries: AdminContactInquiry[];
   popups: AdminPopupNotification[];
+  notices: AdminNotice[];
 }
