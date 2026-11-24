@@ -29,6 +29,9 @@ import type {
   GalleryItem,
   IconName,
   LearningPillar,
+  NoticeCategory,
+  NoticeItem,
+  PopupNotificationItem,
   ProgramItem,
   RoutineItem,
   SiteConfig,
@@ -697,5 +700,104 @@ export async function getPublishedAdmissionFAQs(): Promise<FAQItem[]> {
     }));
   } catch {
     return ADMISSION_FAQS;
+  }
+}
+
+export async function getPublishedPopups(): Promise<PopupNotificationItem[]> {
+  try {
+    const rows = await prisma.popupNotification.findMany({
+      where: { published: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      badge: row.badge || undefined,
+      title: row.title,
+      message: row.message,
+      imageUrl: row.imageUrl || undefined,
+      imageAlt: row.imageAlt || row.title,
+      ctaLabel: row.ctaLabel || undefined,
+      ctaHref: row.ctaHref || undefined,
+      accent: asAccent(row.accent, "magenta"),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const VALID_NOTICE_CATEGORIES: Array<Exclude<NoticeCategory, "all">> = [
+  "notice",
+  "exam",
+  "offer",
+  "event",
+  "holiday",
+];
+
+function asNoticeCategory(val: unknown): Exclude<NoticeCategory, "all"> {
+  if (
+    typeof val === "string" &&
+    VALID_NOTICE_CATEGORIES.includes(val as Exclude<NoticeCategory, "all">)
+  ) {
+    return val as Exclude<NoticeCategory, "all">;
+  }
+  return "notice";
+}
+
+function asAttachmentType(
+  val: unknown,
+): "image" | "pdf" | "file" | undefined {
+  if (val === "image" || val === "pdf" || val === "file") {
+    return val;
+  }
+  return undefined;
+}
+
+export async function getPublishedNotices(): Promise<NoticeItem[]> {
+  try {
+    const rows = await prisma.notice.findMany({
+      where: { published: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      category: asNoticeCategory(row.category),
+      summary: row.summary,
+      content: row.content,
+      noticeDate: row.noticeDate,
+      attachmentUrl: row.attachmentUrl || undefined,
+      attachmentType: asAttachmentType(row.attachmentType),
+      attachmentName: row.attachmentName || undefined,
+      accent: asAccent(row.accent, "magenta"),
+      highlightOnHome: row.highlightOnHome,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getHighlightedNotices(): Promise<NoticeItem[]> {
+  try {
+    const rows = await prisma.notice.findMany({
+      where: { published: true, highlightOnHome: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      category: asNoticeCategory(row.category),
+      summary: row.summary,
+      content: row.content,
+      noticeDate: row.noticeDate,
+      attachmentUrl: row.attachmentUrl || undefined,
+      attachmentType: asAttachmentType(row.attachmentType),
+      attachmentName: row.attachmentName || undefined,
+      accent: asAccent(row.accent, "magenta"),
+      highlightOnHome: row.highlightOnHome,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
   }
 }

@@ -4,10 +4,12 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   Blocks,
   Building2,
   CheckCircle2,
   ExternalLink,
+  FileText,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
@@ -18,6 +20,7 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Star,
   Trash2,
   Users,
   Utensils,
@@ -25,6 +28,7 @@ import {
 } from "lucide-react";
 import {
   ACCENT_OPTIONS,
+  AccentSwatchPicker,
   ICON_OPTIONS,
   ItemRow,
   NumberField,
@@ -34,6 +38,7 @@ import {
   TextField,
 } from "@/components/admin/AdminFormPrimitives";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+import { MediaUploadField } from "@/components/admin/MediaUploadField";
 import { PageSectionsManager } from "@/components/admin/PageSectionsManager";
 import type {
   AdminContactInquiry,
@@ -41,7 +46,9 @@ import type {
   AdminFoodMenu,
   AdminGalleryImage,
   AdminInitialData,
+  AdminNotice,
   AdminPageSection,
+  AdminPopupNotification,
   AdminProgram,
   AdminSiteSettings,
   AdminTeamMember,
@@ -58,6 +65,8 @@ type TabId =
   | "testimonials"
   | "team"
   | "sections"
+  | "popups"
+  | "notices"
   | "inquiries";
 
 type ModalState =
@@ -71,7 +80,9 @@ type ModalState =
       item: Record<string, unknown>;
     }
   | { kind: "team"; mode: "create" | "edit"; item: Record<string, unknown> }
-  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> };
+  | { kind: "menu"; mode: "create" | "edit"; item: Record<string, unknown> }
+  | { kind: "popup"; mode: "create" | "edit"; item: Record<string, unknown> }
+  | { kind: "notice"; mode: "create" | "edit"; item: Record<string, unknown> };
 
 interface AdminDashboardClientProps {
   adminBasePath: string;
@@ -111,6 +122,12 @@ export function AdminDashboardClient({
   );
   const [inquiries, setInquiries] = useState<AdminContactInquiry[]>(
     initialData.inquiries,
+  );
+  const [popups, setPopups] = useState<AdminPopupNotification[]>(
+    initialData.popups || [],
+  );
+  const [notices, setNotices] = useState<AdminNotice[]>(
+    initialData.notices || [],
   );
 
   const visibleSections = sections.filter((s) => s.category !== "benefit");
@@ -161,6 +178,12 @@ export function AdminDashboardClient({
         break;
       case "inquiries":
         setInquiries(data);
+        break;
+      case "popups":
+        setPopups(data);
+        break;
+      case "notices":
+        setNotices(data);
         break;
     }
   }
@@ -242,6 +265,8 @@ export function AdminDashboardClient({
       testimonial: "testimonials",
       team: "team",
       menu: "menu",
+      popup: "popups",
+      notice: "notices",
     };
 
     const resource = resourceMap[modal.kind];
@@ -271,6 +296,32 @@ export function AdminDashboardClient({
       showToast("error", "Network error while saving.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleToggleNoticeHighlight(
+    id: string,
+    currentHighlighted: boolean,
+  ) {
+    try {
+      const res = await fetch("/api/admin/notices", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, highlightOnHome: !currentHighlighted }),
+      });
+      if (!res.ok) {
+        showToast("error", "Failed to update homepage highlight.");
+        return;
+      }
+      await refreshResource("notices");
+      showToast(
+        "success",
+        !currentHighlighted
+          ? "Pinned to homepage highlights."
+          : "Removed from homepage highlights.",
+      );
+    } catch {
+      showToast("error", "Network error while toggling highlight.");
     }
   }
 
@@ -347,6 +398,18 @@ export function AdminDashboardClient({
       count: visibleSections.length,
     },
     {
+      id: "popups",
+      label: "Popups",
+      icon: <Bell className="h-4 w-4" />,
+      count: popups.length,
+    },
+    {
+      id: "notices",
+      label: "Notices & Exams",
+      icon: <FileText className="h-4 w-4" />,
+      count: notices.length,
+    },
+    {
       id: "programs",
       label: "Programs & Care",
       icon: <Blocks className="h-4 w-4" />,
@@ -417,7 +480,7 @@ export function AdminDashboardClient({
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar px-3 py-4">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -637,6 +700,18 @@ export function AdminDashboardClient({
                       pub: visibleSections.filter((x) => x.published).length,
                       total: visibleSections.length,
                       tab: "sections" as TabId,
+                    },
+                    {
+                      label: "Popups",
+                      pub: popups.filter((x) => x.published).length,
+                      total: popups.length,
+                      tab: "popups" as TabId,
+                    },
+                    {
+                      label: "Notices & Exams",
+                      pub: notices.filter((x) => x.published).length,
+                      total: notices.length,
+                      tab: "notices" as TabId,
                     },
                     {
                       label: "New Inquiries",
@@ -1288,6 +1363,188 @@ export function AdminDashboardClient({
             </SectionCard>
           )}
 
+          {/* TAB 9B: POPUPS */}
+          {activeTab === "popups" && (
+            <SectionCard
+              title="Popup Notifications"
+              subtitle="Published popups appear automatically whenever a visitor opens or refreshes the website. Multiple published popups cycle in display order."
+              addLabel="Add Popup"
+              onAdd={() =>
+                setModal({
+                  kind: "popup",
+                  mode: "create",
+                  item: {
+                    badge: "Admissions Open",
+                    title: "",
+                    message: "",
+                    imageUrl: "",
+                    imageAlt: "",
+                    ctaLabel: "",
+                    ctaHref: "/admissions",
+                    accent: "magenta",
+                    sortOrder: popups.length + 1,
+                    published: false,
+                  },
+                })
+              }
+            >
+              <div className="space-y-3">
+                {popups.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FFF8F5] p-6 text-center text-sm text-[#78909C]">
+                    No popup notices yet. Click Add Popup to create an admission
+                    or announcement notice.
+                  </p>
+                ) : (
+                  popups.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      title={item.title}
+                      meta={`${item.badge || "Announcement"}${
+                        item.ctaLabel
+                          ? ` • Button: ${item.ctaLabel} (${item.ctaHref || "/"})`
+                          : ""
+                      } • Order ${item.sortOrder}`}
+                      subtitle={item.message}
+                      imageUrl={item.imageUrl || undefined}
+                      published={item.published}
+                      onTogglePublish={() =>
+                        handleTogglePublish("popups", item.id, item.published)
+                      }
+                      onEdit={() =>
+                        setModal({
+                          kind: "popup",
+                          mode: "edit",
+                          item: {
+                            ...item,
+                            badge: item.badge || "",
+                            imageUrl: item.imageUrl || "",
+                            imageAlt: item.imageAlt || "",
+                            ctaLabel: item.ctaLabel || "",
+                            ctaHref: item.ctaHref || "",
+                          },
+                        })
+                      }
+                      onDelete={() =>
+                        handleDelete("popups", item.id, item.title)
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* TAB 9C: NOTICES & EXAMS */}
+          {activeTab === "notices" && (
+            <SectionCard
+              title="Notices, Exam Details & Offers"
+              subtitle="Publish school circulars, exam routines, admission offers, and holiday notices with optional PDF or image attachments. Highlight important ones on the Homepage."
+              addLabel="Add Notice"
+              onAdd={() =>
+                setModal({
+                  kind: "notice",
+                  mode: "create",
+                  item: {
+                    category: "notice",
+                    title: "",
+                    summary: "",
+                    content: "",
+                    noticeDate: new Date().toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "2-digit",
+                      year: "numeric",
+                    }),
+                    attachmentUrl: "",
+                    attachmentType: "",
+                    attachmentName: "",
+                    accent: "magenta",
+                    highlightOnHome: true,
+                    sortOrder: notices.length + 1,
+                    published: false,
+                  },
+                })
+              }
+            >
+              <div className="space-y-3">
+                {notices.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FFF8F5] p-6 text-center text-sm text-[#78909C]">
+                    No notices yet. Click Add Notice to publish a notice, exam
+                    detail, or special offer.
+                  </p>
+                ) : (
+                  notices.map((item) => (
+                    <div key={item.id} className="space-y-2">
+                      <ItemRow
+                        title={item.title}
+                        meta={`${item.category.toUpperCase()}${
+                          item.noticeDate ? ` • ${item.noticeDate}` : ""
+                        }${
+                          item.attachmentUrl
+                            ? ` • Attachment: ${(item.attachmentType || "file").toUpperCase()}`
+                            : ""
+                        }${item.highlightOnHome ? " • ★ Highlighted on Home" : ""}`}
+                        subtitle={item.summary}
+                        imageUrl={
+                          item.attachmentType === "image" && item.attachmentUrl
+                            ? item.attachmentUrl
+                            : undefined
+                        }
+                        published={item.published}
+                        onTogglePublish={() =>
+                          handleTogglePublish("notices", item.id, item.published)
+                        }
+                        onEdit={() =>
+                          setModal({
+                            kind: "notice",
+                            mode: "edit",
+                            item: {
+                              ...item,
+                              attachmentUrl: item.attachmentUrl || "",
+                              attachmentType: item.attachmentType || "",
+                              attachmentName: item.attachmentName || "",
+                            },
+                          })
+                        }
+                        onDelete={() =>
+                          handleDelete("notices", item.id, item.title)
+                        }
+                      />
+                      <div className="flex justify-end px-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleToggleNoticeHighlight(
+                              item.id,
+                              item.highlightOnHome,
+                            )
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                            item.highlightOnHome
+                              ? "border-[#FF7A45]/40 bg-[#FFF1EB] text-[#E91E63] hover:bg-[#FFF8F5]"
+                              : "border-[#2D3436]/12 bg-white text-[#78909C] hover:border-[#FF7A45] hover:text-[#FF7A45]"
+                          }`}
+                        >
+                          <Star
+                            className={`h-3 w-3 ${
+                              item.highlightOnHome
+                                ? "fill-[#FF7A45] text-[#FF7A45]"
+                                : ""
+                            }`}
+                          />
+                          <span>
+                            {item.highlightOnHome
+                              ? "Pinned to Homepage (Click to Unpin)"
+                              : "Highlight on Homepage"}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </SectionCard>
+          )}
+
           {/* TAB 10: INQUIRIES */}
           {activeTab === "inquiries" && (
             <div className="rounded-3xl border border-[#2D3436]/8 bg-white p-6 shadow-warm">
@@ -1387,7 +1644,7 @@ export function AdminDashboardClient({
       {/* CREATE / EDIT MODAL */}
       {modal.kind !== "closed" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D3436]/60 p-4 backdrop-blur-xs">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto no-scrollbar rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg sm:p-8">
             <div className="flex items-center justify-between border-b border-[#2D3436]/8 pb-4">
               <h3 className="font-[family-name:var(--font-fredoka)] text-xl font-semibold text-[#2D3436]">
                 {modal.mode === "create" ? "Create" : "Edit"}{" "}
@@ -1813,6 +2070,156 @@ function renderModalFields(
             value={String(item.afternoonBooster || "")}
             onChange={(v) => set("afternoonBooster", v)}
           />
+        </>
+      );
+
+    case "popup":
+      return (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField
+              label="Top Badge (optional)"
+              value={String(item.badge || "")}
+              placeholder="e.g., Admissions Open, Holiday Notice"
+              onChange={(v) => set("badge", v)}
+            />
+            <NumberField
+              label="Display Order (lower shows first)"
+              value={Number(item.sortOrder || 0)}
+              onChange={(v) => set("sortOrder", v)}
+            />
+          </div>
+          <TextField
+            label="Popup Headline *"
+            required
+            value={String(item.title || "")}
+            placeholder="e.g., Admissions Open for New Session!"
+            onChange={(v) => set("title", v)}
+          />
+          <TextAreaField
+            label="Announcement Message *"
+            required
+            rows={4}
+            value={String(item.message || "")}
+            placeholder="Write your announcement details for parents..."
+            onChange={(v) => set("message", v)}
+          />
+          <AccentSwatchPicker
+            value={String(item.accent || "magenta")}
+            onChange={(v) => set("accent", v)}
+          />
+          <div>
+            <ImageUploadField
+              label="Banner Image (optional)"
+              value={String(item.imageUrl || "")}
+              onChange={(url) => set("imageUrl", url)}
+              placeholder="Leave blank for text-only notice or upload via Cloudinary"
+            />
+            {Boolean(item.imageUrl) && (
+              <button
+                type="button"
+                onClick={() => set("imageUrl", "")}
+                className="mt-1.5 text-xs font-semibold text-[#E91E63] hover:underline"
+              >
+                Remove banner image
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField
+              label="Action Button Text (optional)"
+              value={String(item.ctaLabel || "")}
+              placeholder="e.g., Book a Campus Visit"
+              onChange={(v) => set("ctaLabel", v)}
+            />
+            <TextField
+              label="Action Button Link (optional)"
+              value={String(item.ctaHref || "")}
+              placeholder="e.g., /admissions or https://..."
+              onChange={(v) => set("ctaHref", v)}
+            />
+          </div>
+        </>
+      );
+
+    case "notice":
+      return (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SelectField
+              label="Category *"
+              value={String(item.category || "notice")}
+              options={[
+                { value: "notice", label: "General Notice" },
+                { value: "exam", label: "Exam Details" },
+                { value: "offer", label: "Offer / Discount" },
+                { value: "event", label: "School Event" },
+                { value: "holiday", label: "Holiday Notice" },
+              ]}
+              onChange={(v) => set("category", v)}
+            />
+            <TextField
+              label="Date / Period Label"
+              value={String(item.noticeDate || "")}
+              placeholder="e.g., Nov 24, 2026"
+              onChange={(v) => set("noticeDate", v)}
+            />
+            <NumberField
+              label="Display Order"
+              value={Number(item.sortOrder || 0)}
+              onChange={(v) => set("sortOrder", v)}
+            />
+          </div>
+          <TextField
+            label="Notice Title *"
+            required
+            value={String(item.title || "")}
+            placeholder="e.g., First Term Assessment Schedule"
+            onChange={(v) => set("title", v)}
+          />
+          <TextAreaField
+            label="Short Summary *"
+            required
+            rows={2}
+            value={String(item.summary || "")}
+            placeholder="Brief 1-2 line summary shown on cards..."
+            onChange={(v) => set("summary", v)}
+          />
+          <TextAreaField
+            label="Full Notice Details *"
+            required
+            rows={4}
+            value={String(item.content || "")}
+            placeholder="Full circular text, exam routine details, or offer instructions..."
+            onChange={(v) => set("content", v)}
+          />
+          <MediaUploadField
+            label="Attachment: PDF, Image, or Document (optional)"
+            url={String(item.attachmentUrl || "")}
+            mediaType={String(item.attachmentType || "")}
+            mediaName={String(item.attachmentName || "")}
+            onChange={(next) =>
+              update({
+                ...item,
+                attachmentUrl: next.attachmentUrl,
+                attachmentType: next.attachmentType,
+                attachmentName: next.attachmentName,
+              })
+            }
+          />
+          <AccentSwatchPicker
+            value={String(item.accent || "magenta")}
+            onChange={(v) => set("accent", v)}
+          />
+          <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[#FF7A45]/25 bg-[#FFF8F5] px-4 py-3 text-xs font-semibold text-[#2D3436]">
+            <input
+              type="checkbox"
+              checked={Boolean(item.highlightOnHome)}
+              onChange={(e) => set("highlightOnHome", e.target.checked)}
+              className="h-4 w-4 accent-[#E91E63]"
+            />
+            <span>Highlight this notice on Homepage</span>
+          </label>
         </>
       );
   }

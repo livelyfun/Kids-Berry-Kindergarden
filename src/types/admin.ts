@@ -165,6 +165,37 @@ export interface AdminContactInquiry {
   createdAt: string;
 }
 
+export interface AdminPopupNotification {
+  id: string;
+  badge: string | null;
+  title: string;
+  message: string;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  accent: string;
+  sortOrder: number;
+  published: boolean;
+}
+
+export interface AdminNotice {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string;
+  noticeDate: string;
+  attachmentUrl: string | null;
+  attachmentType: string | null;
+  attachmentName: string | null;
+  accent: string;
+  highlightOnHome: boolean;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+}
+
 export interface AdminInitialData {
   settings: AdminSiteSettings | null;
   programs: AdminProgram[];
@@ -175,4 +206,6 @@ export interface AdminInitialData {
   menu: AdminFoodMenu[];
   sections: AdminPageSection[];
   inquiries: AdminContactInquiry[];
+  popups: AdminPopupNotification[];
+  notices: AdminNotice[];
 }

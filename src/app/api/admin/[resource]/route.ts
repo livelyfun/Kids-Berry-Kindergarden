@@ -53,6 +53,7 @@ function revalidateSite() {
   revalidatePath("/programs");
   revalidatePath("/facilities");
   revalidatePath("/gallery");
+  revalidatePath("/notices");
   revalidatePath("/admissions");
   revalidatePath("/contact");
 }
@@ -121,6 +122,18 @@ export async function GET(
       case "inquiries": {
         const items = await prisma.contactInquiry.findMany({
           orderBy: { createdAt: "desc" },
+        });
+        return NextResponse.json({ data: items });
+      }
+      case "popups": {
+        const items = await prisma.popupNotification.findMany({
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        });
+        return NextResponse.json({ data: items });
+      }
+      case "notices": {
+        const items = await prisma.notice.findMany({
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
         });
         return NextResponse.json({ data: items });
       }
@@ -380,6 +393,71 @@ export async function POST(
         break;
       }
 
+      case "popups": {
+        const title = String(body.title || "").trim();
+        const message = String(body.message || "").trim();
+        if (!title || !message) {
+          return NextResponse.json(
+            { error: "Title and message are required." },
+            { status: 400 },
+          );
+        }
+        created = await prisma.popupNotification.create({
+          data: {
+            badge: body.badge ? String(body.badge).trim() || null : null,
+            title,
+            message,
+            imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
+            imageAlt: body.imageAlt
+              ? String(body.imageAlt).trim() || title
+              : title,
+            ctaLabel: body.ctaLabel
+              ? String(body.ctaLabel).trim() || null
+              : null,
+            ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
+            accent: String(body.accent || "magenta"),
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+            published: Boolean(body.published),
+          },
+        });
+        break;
+      }
+
+      case "notices": {
+        const title = String(body.title || "").trim();
+        const summary = String(body.summary || "").trim();
+        const content = String(body.content || "").trim();
+        if (!title || !summary || !content) {
+          return NextResponse.json(
+            { error: "Title, summary, and full notice content are required." },
+            { status: 400 },
+          );
+        }
+        created = await prisma.notice.create({
+          data: {
+            title,
+            category: String(body.category || "notice"),
+            summary,
+            content,
+            noticeDate: String(body.noticeDate || "").trim(),
+            attachmentUrl: body.attachmentUrl
+              ? String(body.attachmentUrl).trim() || null
+              : null,
+            attachmentType: body.attachmentUrl
+              ? String(body.attachmentType || "file")
+              : null,
+            attachmentName: body.attachmentUrl
+              ? String(body.attachmentName || "").trim() || null
+              : null,
+            accent: String(body.accent || "magenta"),
+            highlightOnHome: Boolean(body.highlightOnHome),
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+            published: Boolean(body.published),
+          },
+        });
+        break;
+      }
+
       default:
         return NextResponse.json(
           { error: `POST not supported for resource: ${resource}` },
@@ -613,6 +691,7 @@ async function handleUpdate(
         break;
       }
 
+
       case "facilities": {
         updated = await prisma.facility.update({
           where: { id },
@@ -643,6 +722,7 @@ async function handleUpdate(
         });
         break;
       }
+
 
       case "gallery": {
         const category =
@@ -682,6 +762,7 @@ async function handleUpdate(
         break;
       }
 
+
       case "testimonials": {
         updated = await prisma.testimonial.update({
           where: { id },
@@ -711,6 +792,7 @@ async function handleUpdate(
         break;
       }
 
+
       case "team": {
         updated = await prisma.teamMember.update({
           where: { id },
@@ -738,6 +820,7 @@ async function handleUpdate(
         break;
       }
 
+
       case "menu": {
         updated = await prisma.foodMenu.update({
           where: { id },
@@ -761,6 +844,7 @@ async function handleUpdate(
         });
         break;
       }
+
 
       case "sections": {
         updated = await prisma.pageSection.update({
@@ -800,11 +884,95 @@ async function handleUpdate(
         break;
       }
 
+
       case "inquiries": {
         updated = await prisma.contactInquiry.update({
           where: { id },
           data: {
             ...(body.status !== undefined && { status: String(body.status) }),
+            ...(body.published !== undefined && {
+              published: Boolean(body.published),
+            }),
+          },
+        });
+        break;
+      }
+
+
+      case "popups": {
+        updated = await prisma.popupNotification.update({
+          where: { id },
+          data: {
+            ...(body.badge !== undefined && {
+              badge: body.badge ? String(body.badge).trim() || null : null,
+            }),
+            ...(body.title !== undefined && { title: String(body.title).trim() }),
+            ...(body.message !== undefined && {
+              message: String(body.message).trim(),
+            }),
+            ...(body.imageUrl !== undefined && {
+              imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
+            }),
+            ...(body.imageAlt !== undefined && {
+              imageAlt: body.imageAlt ? String(body.imageAlt).trim() || null : null,
+            }),
+            ...(body.ctaLabel !== undefined && {
+              ctaLabel: body.ctaLabel ? String(body.ctaLabel).trim() || null : null,
+            }),
+            ...(body.ctaHref !== undefined && {
+              ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
+            }),
+            ...(body.accent !== undefined && { accent: String(body.accent) }),
+            ...(body.sortOrder !== undefined && {
+              sortOrder: parseIntSafe(body.sortOrder, 0),
+            }),
+            ...(body.published !== undefined && {
+              published: Boolean(body.published),
+            }),
+          },
+        });
+        break;
+      }
+
+      case "notices": {
+        updated = await prisma.notice.update({
+          where: { id },
+          data: {
+            ...(body.title !== undefined && { title: String(body.title).trim() }),
+            ...(body.category !== undefined && {
+              category: String(body.category),
+            }),
+            ...(body.summary !== undefined && {
+              summary: String(body.summary).trim(),
+            }),
+            ...(body.content !== undefined && {
+              content: String(body.content).trim(),
+            }),
+            ...(body.noticeDate !== undefined && {
+              noticeDate: String(body.noticeDate).trim(),
+            }),
+            ...(body.attachmentUrl !== undefined && {
+              attachmentUrl: body.attachmentUrl
+                ? String(body.attachmentUrl).trim() || null
+                : null,
+            }),
+            ...(body.attachmentType !== undefined && {
+              attachmentType: body.attachmentType
+                ? String(body.attachmentType).trim() || null
+                : null,
+            }),
+            ...(body.attachmentName !== undefined && {
+              attachmentName: body.attachmentName
+                ? String(body.attachmentName).trim() || null
+                : null,
+            }),
+            ...(body.accent !== undefined && { accent: String(body.accent) }),
+            ...(body.highlightOnHome !== undefined && {
+              highlightOnHome: Boolean(body.highlightOnHome),
+            }),
+            ...(body.sortOrder !== undefined && {
+              sortOrder: parseIntSafe(body.sortOrder, 0),
+            }),
             ...(body.published !== undefined && {
               published: Boolean(body.published),
             }),
@@ -881,6 +1049,12 @@ export async function DELETE(
         break;
       case "inquiries":
         await prisma.contactInquiry.delete({ where: { id } });
+        break;
+      case "popups":
+        await prisma.popupNotification.delete({ where: { id } });
+        break;
+      case "notices":
+        await prisma.notice.delete({ where: { id } });
         break;
       default:
         return NextResponse.json(

@@ -244,3 +244,38 @@ export interface FAQItem {
   question: string;
   answer: string;
 }
+
+export interface PopupNotificationItem {
+  id: string;
+  badge?: string;
+  title: string;
+  message: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  accent: BrandAccent;
+}
+
+export type NoticeCategory =
+  | "all"
+  | "notice"
+  | "exam"
+  | "offer"
+  | "event"
+  | "holiday";
+
+export interface NoticeItem {
+  id: string;
+  title: string;
+  category: Exclude<NoticeCategory, "all">;
+  summary: string;
+  content: string;
+  noticeDate: string;
+  attachmentUrl?: string;
+  attachmentType?: "image" | "pdf" | "file";
+  attachmentName?: string;
+  accent: BrandAccent;
+  highlightOnHome: boolean;
+  createdAt: string;
+}

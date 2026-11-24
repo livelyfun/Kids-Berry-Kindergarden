@@ -662,6 +662,85 @@ async function main() {
     });
   }
 
+  // Seed initial CMS Popup Notification (if none exist yet)
+  const existingPopupCount = await prisma.popupNotification.count();
+  if (existingPopupCount === 0) {
+    await prisma.popupNotification.create({
+      data: {
+        badge: "Admissions Open",
+        title: "Admissions Open for the New Montessori Session!",
+        message:
+          "Enroll your little one at Kids Berry Kindergarten School in Pichara, Biratnagar-11. Regular Classes (9:00 AM – 3:00 PM), Daycare, After-Class Care (3:00 PM – 5:00 PM), 24/7 CCTV safety, and fresh weekly meals with daily hot milk & fruits.",
+        imageUrl: "/images/hero-classroom.jpg",
+        imageAlt: "Kids Berry Kindergarten School Montessori classroom",
+        ctaLabel: "Book a Campus Visit",
+        ctaHref: "/admissions",
+        accent: "magenta",
+        sortOrder: 1,
+        published: true,
+      },
+    });
+  }
+
+  // Seed initial CMS Notices (General Notice, Exam Details, Admission Offer) if none exist
+  const existingNoticeCount = await prisma.notice.count();
+  if (existingNoticeCount === 0) {
+    const initialNotices = [
+      {
+        title: "New Academic Session Admissions Open (Playgroup to UKG)",
+        category: "notice",
+        summary:
+          "Applications are now open for Regular Montessori Classes (9:00 AM – 3:00 PM), Daycare, and After-Class Care (3:00 PM – 5:00 PM) at Pichara, Biratnagar-11.",
+        content:
+          "Dear Parents,\n\nWe are delighted to announce that admissions for the upcoming academic session are now open across Playgroup, Nursery, Junior KG (LKG), and Senior KG (UKG).\n\nFamilies may visit our Pichara, Biratnagar-11 campus Sunday through Friday to tour our CCTV-monitored Montessori classrooms, inspect our clean kitchen & weekly food menu, and meet our teachers.",
+        noticeDate: "Nov 24, 2026",
+        attachmentUrl: "/images/hero-classroom.jpg",
+        attachmentType: "image",
+        attachmentName: "Kids Berry Montessori Classroom Overview",
+        accent: "magenta",
+        highlightOnHome: true,
+        sortOrder: 1,
+        published: true,
+      },
+      {
+        title: "Second Terminal Assessment & Montessori Progress Showcase",
+        category: "exam",
+        summary:
+          "Stress-free observational assessments and parent-educator progress review schedule for Nursery, Junior KG, and Senior KG students.",
+        content:
+          "At Kids Berry Kindergarten School, young learners are assessed gently through hands-on Montessori materials, phonics reading readiness, and creative activity observation rather than high-pressure written exams.\n\nSchedule Highlights:\n• Playgroup & Nursery: Activity-based milestone observation throughout the week\n• Junior KG (LKG): Phonics sounds, counting beads & practical life showcase\n• Senior KG (UKG): Reading fluency, Montessori golden bead math & story presentation\n• Parent Progress Meet: Friday 1:00 PM – 3:00 PM at respective classrooms.",
+        noticeDate: "Dec 05, 2026",
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentName: null,
+        accent: "teal",
+        highlightOnHome: true,
+        sortOrder: 2,
+        published: true,
+      },
+      {
+        title: "Early Bird Sibling & Full-Day Daycare Enrollment Offer",
+        category: "offer",
+        summary:
+          "Special fee concession on admission registration for families enrolling before month-end or registering siblings for Regular Class + Daycare.",
+        content:
+          "We are pleased to extend a warm family support offer for new admissions and working parents in Biratnagar:\n\n• Sibling Privilege: 15% registration discount when enrolling a second child.\n• Full-Day Care Bundle: Preferential monthly package when pairing Regular Montessori Class (9 AM – 3 PM) with After-Class Care (3 PM – 5 PM).\n• Always Included: Fresh Sunday–Friday school meals plus daily warm milk & fresh seasonal fruits at zero extra tiffin hassle.\n\nVisit our front desk or message us on WhatsApp to claim this offer during your campus visit.",
+        noticeDate: "Limited Time Offer",
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentName: null,
+        accent: "orange",
+        highlightOnHome: true,
+        sortOrder: 3,
+        published: true,
+      },
+    ];
+
+    for (const notice of initialNotices) {
+      await prisma.notice.create({ data: notice });
+    }
+  }
+
   console.log("Kids Berry CMS seed completed successfully.");
 }
 
