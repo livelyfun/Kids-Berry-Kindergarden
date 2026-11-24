@@ -8,8 +8,11 @@ import {
   Blocks,
   Building2,
   CheckCircle2,
+  Download,
   ExternalLink,
+  Eye,
   FileText,
+  GraduationCap,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
@@ -17,6 +20,7 @@ import {
   Loader2,
   LogOut,
   MessageSquareQuote,
+  Paperclip,
   Save,
   Settings,
   ShieldCheck,
@@ -41,6 +45,8 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { MediaUploadField } from "@/components/admin/MediaUploadField";
 import { PageSectionsManager } from "@/components/admin/PageSectionsManager";
 import type {
+  AdminAdmissionApplication,
+  AdminAdmissionDocument,
   AdminContactInquiry,
   AdminFacility,
   AdminFoodMenu,
@@ -67,7 +73,8 @@ type TabId =
   | "sections"
   | "popups"
   | "notices"
-  | "inquiries";
+  | "inquiries"
+  | "admissions";
 
 type ModalState =
   | { kind: "closed" }
@@ -122,6 +129,12 @@ export function AdminDashboardClient({
   );
   const [inquiries, setInquiries] = useState<AdminContactInquiry[]>(
     initialData.inquiries,
+  );
+  const [admissions, setAdmissions] = useState<AdminAdmissionApplication[]>(
+    initialData.admissions || [],
+  );
+  const [previewDoc, setPreviewDoc] = useState<AdminAdmissionDocument | null>(
+    null,
   );
   const [popups, setPopups] = useState<AdminPopupNotification[]>(
     initialData.popups || [],
@@ -178,6 +191,9 @@ export function AdminDashboardClient({
         break;
       case "inquiries":
         setInquiries(data);
+        break;
+      case "admissions":
+        setAdmissions(data);
         break;
       case "popups":
         setPopups(data);
@@ -369,6 +385,22 @@ export function AdminDashboardClient({
     }
   }
 
+  async function handleUpdateAdmissionStatus(id: string, status: string) {
+    try {
+      const res = await fetch("/api/admin/admissions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        await refreshResource("admissions");
+        showToast("success", `Admission application marked as ${status}.`);
+      }
+    } catch {
+      showToast("error", "Failed to update admission status.");
+    }
+  }
+
   async function handleLogout() {
     await fetch("/api/admin/auth/logout", { method: "POST" });
     router.push(`${adminBasePath}/login`);
@@ -450,6 +482,12 @@ export function AdminDashboardClient({
       label: "Inquiries",
       icon: <Inbox className="h-4 w-4" />,
       count: inquiries.filter((i) => i.status === "NEW").length || inquiries.length,
+    },
+    {
+      id: "admissions",
+      label: "Admissions",
+      icon: <GraduationCap className="h-4 w-4" />,
+      count: admissions.filter((a) => a.status === "NEW").length || admissions.length,
     },
   ];
 
@@ -718,6 +756,12 @@ export function AdminDashboardClient({
                       pub: inquiries.filter((x) => x.status === "NEW").length,
                       total: inquiries.length,
                       tab: "inquiries" as TabId,
+                    },
+                    {
+                      label: "Admissions",
+                      pub: admissions.filter((x) => x.status === "NEW").length,
+                      total: admissions.length,
+                      tab: "admissions" as TabId,
                     },
                   ].map((stat) => (
                     <button
@@ -1637,9 +1681,320 @@ export function AdminDashboardClient({
               </div>
             </div>
           )}
+          {/* TAB 11: ONLINE ADMISSIONS & DOCUMENTS */}
+          {activeTab === "admissions" && (
+            <div className="rounded-3xl border border-[#2D3436]/8 bg-white p-6 shadow-warm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-[family-name:var(--font-fredoka)] text-xl font-semibold text-[#2D3436]">
+                    Online Admission Applications &amp; Submitted Documents
+                  </h2>
+                  <p className="mt-1 text-xs text-[#78909C]">
+                    Student enrollment forms and uploaded documents submitted from
+                    the website&rsquo;s Online Admission Form.
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#FFF1EB] px-3.5 py-1 text-xs font-semibold text-[#E91E63]">
+                  {admissions.length} Application
+                  {admissions.length === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              <div className="mt-5 space-y-5">
+                {admissions.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FFF8F5] p-6 text-center text-sm text-[#78909C]">
+                    No online admission applications submitted yet.
+                  </p>
+                ) : (
+                  admissions.map((app) => {
+                    const docsList = Array.isArray(app.documents)
+                      ? app.documents
+                      : [];
+                    const childPhoto = docsList.find(
+                      (d) => d.key === "child_photo" && d.fileType === "image",
+                    );
+
+                    return (
+                      <div
+                        key={app.id}
+                        className="rounded-3xl border border-[#2D3436]/10 bg-[#FFF8F5] p-5"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            {childPhoto ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={childPhoto.url}
+                                alt={app.childName}
+                                className="h-14 w-14 shrink-0 rounded-2xl border-2 border-white object-cover shadow-xs"
+                              />
+                            ) : (
+                              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#FFF1EB] text-[#E91E63]">
+                                <GraduationCap className="h-6 w-6" />
+                              </div>
+                            )}
+
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="font-[family-name:var(--font-fredoka)] text-lg font-semibold text-[#2D3436]">
+                                  {app.childName}
+                                </h3>
+                                <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-[#E91E63]">
+                                  {app.program}
+                                </span>
+                                {app.childGender && (
+                                  <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#78909C]">
+                                    {app.childGender}
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="mt-1 text-xs font-medium text-[#26A69A]">
+                                DOB: {app.childDob || "N/A"} • Age:{" "}
+                                {app.childAge} • Care: {app.preferredCare}
+                              </p>
+
+                              <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 text-xs text-[#2D3436] sm:grid-cols-2">
+                                <p>
+                                  <strong>Parent ({app.relation}):</strong>{" "}
+                                  {app.parentName}
+                                </p>
+                                <p>
+                                  <strong>Phone:</strong> {app.phone}
+                                  {app.secondaryPhone
+                                    ? ` / ${app.secondaryPhone}`
+                                    : ""}
+                                </p>
+                                <p>
+                                  <strong>Address:</strong> {app.address}
+                                </p>
+                                {app.email && (
+                                  <p>
+                                    <strong>Email:</strong> {app.email}
+                                  </p>
+                                )}
+                                <p>
+                                  <strong>School Van:</strong>{" "}
+                                  {app.transportRequired
+                                    ? "Required"
+                                    : "Not needed"}{" "}
+                                  • <strong>Meals:</strong>{" "}
+                                  {app.mealsRequired ? "Yes" : "No"}
+                                </p>
+                                {app.previousSchool && (
+                                  <p>
+                                    <strong>Previous School:</strong>{" "}
+                                    {app.previousSchool}
+                                  </p>
+                                )}
+                                {app.medicalNotes && (
+                                  <p className="sm:col-span-2">
+                                    <strong>Health / Dietary Notes:</strong>{" "}
+                                    {app.medicalNotes}
+                                  </p>
+                                )}
+                                {app.message && (
+                                  <p className="sm:col-span-2">
+                                    <strong>Notes:</strong> {app.message}
+                                  </p>
+                                )}
+                              </div>
+
+                              <p className="mt-2 text-[11px] text-[#78909C]">
+                                Submitted:{" "}
+                                {new Date(app.createdAt).toLocaleString()} • ID:{" "}
+                                {app.id.slice(-8).toUpperCase()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={app.status}
+                              onChange={(e) =>
+                                handleUpdateAdmissionStatus(
+                                  app.id,
+                                  e.target.value,
+                                )
+                              }
+                              className="rounded-xl border border-[#2D3436]/15 bg-white px-3 py-1.5 text-xs font-semibold text-[#2D3436]"
+                            >
+                              <option value="NEW">NEW</option>
+                              <option value="UNDER_REVIEW">UNDER REVIEW</option>
+                              <option value="APPROVED">APPROVED</option>
+                              <option value="ENROLLED">ENROLLED</option>
+                              <option value="ARCHIVED">ARCHIVED</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDelete(
+                                  "admissions",
+                                  app.id,
+                                  `${app.childName} (${app.parentName})`,
+                                )
+                              }
+                              className="rounded-xl border border-[#FF6B81]/30 bg-white p-2 text-[#E91E63] hover:bg-[#FFF1EB]"
+                              aria-label="Delete admission application"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Submitted Admission Documents */}
+                        <div className="mt-4 border-t border-[#2D3436]/8 pt-4">
+                          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#E91E63]">
+                            <Paperclip className="h-3.5 w-3.5" />
+                            <span>
+                              Submitted Admission Documents ({docsList.length})
+                            </span>
+                          </p>
+
+                          {docsList.length === 0 ? (
+                            <p className="mt-2 text-xs text-[#78909C]">
+                              No digital documents were attached to this
+                              application.
+                            </p>
+                          ) : (
+                            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {docsList.map((doc, dIdx) => (
+                                <div
+                                  key={`${app.id}-${doc.key}-${dIdx}`}
+                                  className="flex flex-col justify-between gap-2.5 rounded-2xl border border-[#2D3436]/10 bg-white p-3"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#2D3436]/10 bg-[#FFF8F5]">
+                                      {doc.fileType === "image" ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                          src={doc.url}
+                                          alt={doc.label}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : doc.fileType === "pdf" ? (
+                                        <FileText className="h-5 w-5 text-[#E91E63]" />
+                                      ) : (
+                                        <Paperclip className="h-5 w-5 text-[#26A69A]" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-semibold text-[#2D3436]">
+                                        {doc.label}
+                                      </p>
+                                      <p className="truncate text-[11px] text-[#78909C]">
+                                        {doc.fileName} ({doc.fileType})
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 border-t border-[#2D3436]/8 pt-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewDoc(doc)}
+                                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-[#FFF1EB] px-3 py-1.5 text-[11px] font-semibold text-[#E91E63] hover:bg-[#E91E63] hover:text-white"
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                      <span>Preview</span>
+                                    </button>
+                                    <a
+                                      href={doc.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-[#26A69A] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#26A69A]/90"
+                                    >
+                                      <Download className="h-3 w-3" />
+                                      <span>Open</span>
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
           </section>
         </div>
       </div>
+
+      {/* ADMISSION DOCUMENT PREVIEW MODAL */}
+      {previewDoc && (
+        <div
+          onClick={() => setPreviewDoc(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D3436]/70 p-4 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto no-scrollbar rounded-[2rem] border border-[#2D3436]/10 bg-white p-6 shadow-warm-lg"
+          >
+            <div className="flex items-center justify-between border-b border-[#2D3436]/8 pb-3">
+              <div>
+                <h3 className="font-[family-name:var(--font-fredoka)] text-lg font-semibold text-[#2D3436]">
+                  {previewDoc.label}
+                </h3>
+                <p className="text-xs text-[#78909C]">{previewDoc.fileName}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewDoc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#26A69A] px-4 py-1.5 text-xs font-semibold text-white"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Open Original</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="rounded-xl bg-[#FFF8F5] p-2 text-[#78909C] hover:text-[#E91E63]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[#2D3436]/10 bg-[#FFF8F5]">
+              {previewDoc.fileType === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewDoc.url}
+                  alt={previewDoc.label}
+                  className="max-h-[70vh] w-full object-contain"
+                />
+              ) : previewDoc.fileType === "pdf" ? (
+                <iframe
+                  title={previewDoc.label}
+                  src={previewDoc.url}
+                  className="h-[70vh] w-full border-0"
+                />
+              ) : (
+                <div className="p-10 text-center">
+                  <Paperclip className="mx-auto h-10 w-10 text-[#26A69A]" />
+                  <p className="mt-2 text-sm font-semibold text-[#2D3436]">
+                    {previewDoc.fileName}
+                  </p>
+                  <a
+                    href={previewDoc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#26A69A] px-5 py-2 text-xs font-semibold text-white"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download Document</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE / EDIT MODAL */}
       {modal.kind !== "closed" && (
@@ -2125,19 +2480,92 @@ function renderModalFields(
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <TextField
-              label="Action Button Text (optional)"
-              value={String(item.ctaLabel || "")}
-              placeholder="e.g., Book a Campus Visit"
-              onChange={(v) => set("ctaLabel", v)}
+          <div className="space-y-3 rounded-2xl border border-[#2D3436]/10 bg-[#FFF8F5] p-4">
+            <SelectField
+              label="Direct Website Page Link (Quick Select)"
+              value={
+                [
+                  "/admissions#admission-form",
+                  "/admissions",
+                  "/notices",
+                  "/programs",
+                  "/facilities",
+                  "/gallery",
+                  "/about",
+                  "/contact",
+                ].includes(String(item.ctaHref || ""))
+                  ? String(item.ctaHref || "")
+                  : ""
+              }
+              options={[
+                { value: "", label: "Custom URL or choose a website page..." },
+                {
+                  value: "/admissions#admission-form",
+                  label: "Apply for Admission Form (/admissions#admission-form)",
+                },
+                {
+                  value: "/admissions",
+                  label: "Admissions Overview (/admissions)",
+                },
+                {
+                  value: "/notices",
+                  label: "Notices, Exams & Offers (/notices)",
+                },
+                {
+                  value: "/programs",
+                  label: "Programs & Classes — PG to Grade 2 (/programs)",
+                },
+                {
+                  value: "/facilities",
+                  label: "Facilities & Weekly Food Menu (/facilities)",
+                },
+                {
+                  value: "/gallery",
+                  label: "Photo Gallery (/gallery)",
+                },
+                {
+                  value: "/about",
+                  label: "About Us & Faculty (/about)",
+                },
+                {
+                  value: "/contact",
+                  label: "Contact & Map (/contact)",
+                },
+              ]}
+              onChange={(v) => {
+                if (!v) return;
+                const labelDefaults: Record<string, string> = {
+                  "/admissions#admission-form": "Apply for Admission",
+                  "/admissions": "View Admissions",
+                  "/notices": "View Notices & Exams",
+                  "/programs": "Explore Programs",
+                  "/facilities": "View Facilities & Menu",
+                  "/gallery": "View Photo Gallery",
+                  "/about": "About Kids Berry",
+                  "/contact": "Contact Us",
+                };
+                update({
+                  ...item,
+                  ctaHref: v,
+                  ctaLabel: labelDefaults[v] || String(item.ctaLabel || ""),
+                });
+              }}
             />
-            <TextField
-              label="Action Button Link (optional)"
-              value={String(item.ctaHref || "")}
-              placeholder="e.g., /admissions or https://..."
-              onChange={(v) => set("ctaHref", v)}
-            />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <TextField
+                label="Action Button Text (optional)"
+                value={String(item.ctaLabel || "")}
+                placeholder="e.g., Apply for Admission"
+                onChange={(v) => set("ctaLabel", v)}
+              />
+              <TextField
+                label="Direct Action Link / Page Path (optional)"
+                value={String(item.ctaHref || "")}
+                placeholder="e.g., /admissions#admission-form or https://..."
+                onChange={(v) => set("ctaHref", v)}
+              />
+            </div>
           </div>
         </>
       );

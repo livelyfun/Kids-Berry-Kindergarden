@@ -1,9 +1,24 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
+import { asc, desc, eq } from "drizzle-orm";
 import { getAdminSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import {
+  admissionApplications,
+  contactInquiries,
+  db,
+  facilities,
+  foodMenus,
+  galleryImages,
+  notices,
+  pageSections,
+  popupNotifications,
+  programs,
+  siteSettings,
+  teamMembers,
+  testimonials,
+  users,
+} from "@/db";
 
 function parseJsonStringArray(val: unknown): string[] {
   if (Array.isArray(val)) {
@@ -25,17 +40,17 @@ function parseIntSafe(val: unknown, fallback = 0): number {
 
 function parseJsonObjectOrNull(
   val: unknown,
-): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+): Record<string, unknown> | unknown[] | null | undefined {
   if (val === undefined) return undefined;
-  if (val === null || val === "") return Prisma.JsonNull;
+  if (val === null || val === "") return null;
   if (typeof val === "string") {
     try {
-      return JSON.parse(val) as Prisma.InputJsonValue;
+      return JSON.parse(val);
     } catch {
       return undefined;
     }
   }
-  return val as Prisma.InputJsonValue;
+  return val as Record<string, unknown>;
 }
 
 function slugify(text: string): string {
@@ -72,69 +87,88 @@ export async function GET(
   try {
     switch (resource) {
       case "settings": {
-        const settings = await prisma.siteSettings.findUnique({
-          where: { id: "default" },
-        });
-        return NextResponse.json({ data: settings });
+        const [settings] = await db
+          .select()
+          .from(siteSettings)
+          .where(eq(siteSettings.id, "default"))
+          .limit(1);
+        return NextResponse.json({ data: settings || null });
       }
       case "programs": {
-        const items = await prisma.program.findMany({
-          orderBy: [{ programType: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
-        });
+        const items = await db
+          .select()
+          .from(programs)
+          .orderBy(asc(programs.programType), asc(programs.sortOrder), asc(programs.createdAt));
         return NextResponse.json({ data: items });
       }
       case "facilities": {
-        const items = await prisma.facility.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        });
+        const items = await db
+          .select()
+          .from(facilities)
+          .orderBy(asc(facilities.sortOrder), asc(facilities.createdAt));
         return NextResponse.json({ data: items });
       }
       case "gallery": {
-        const items = await prisma.galleryImage.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        });
+        const items = await db
+          .select()
+          .from(galleryImages)
+          .orderBy(asc(galleryImages.sortOrder), desc(galleryImages.createdAt));
         return NextResponse.json({ data: items });
       }
       case "testimonials": {
-        const items = await prisma.testimonial.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        });
+        const items = await db
+          .select()
+          .from(testimonials)
+          .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt));
         return NextResponse.json({ data: items });
       }
       case "team": {
-        const items = await prisma.teamMember.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        });
+        const items = await db
+          .select()
+          .from(teamMembers)
+          .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.createdAt));
         return NextResponse.json({ data: items });
       }
       case "menu": {
-        const items = await prisma.foodMenu.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        });
+        const items = await db
+          .select()
+          .from(foodMenus)
+          .orderBy(asc(foodMenus.sortOrder), asc(foodMenus.createdAt));
         return NextResponse.json({ data: items });
       }
       case "sections": {
-        const items = await prisma.pageSection.findMany({
-          orderBy: [{ page: "asc" }, { category: "asc" }, { sortOrder: "asc" }],
-        });
+        const items = await db
+          .select()
+          .from(pageSections)
+          .orderBy(asc(pageSections.page), asc(pageSections.category), asc(pageSections.sortOrder));
         return NextResponse.json({ data: items });
       }
       case "inquiries": {
-        const items = await prisma.contactInquiry.findMany({
-          orderBy: { createdAt: "desc" },
-        });
+        const items = await db
+          .select()
+          .from(contactInquiries)
+          .orderBy(desc(contactInquiries.createdAt));
+        return NextResponse.json({ data: items });
+      }
+      case "admissions": {
+        const items = await db
+          .select()
+          .from(admissionApplications)
+          .orderBy(desc(admissionApplications.createdAt));
         return NextResponse.json({ data: items });
       }
       case "popups": {
-        const items = await prisma.popupNotification.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        });
+        const items = await db
+          .select()
+          .from(popupNotifications)
+          .orderBy(asc(popupNotifications.sortOrder), desc(popupNotifications.createdAt));
         return NextResponse.json({ data: items });
       }
       case "notices": {
-        const items = await prisma.notice.findMany({
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        });
+        const items = await db
+          .select()
+          .from(notices)
+          .orderBy(asc(notices.sortOrder), desc(notices.createdAt));
         return NextResponse.json({ data: items });
       }
       default:
@@ -177,15 +211,18 @@ export async function POST(
           );
         }
         const baseSlug = slugify(String(body.slug || title)) || `prog-${Date.now()}`;
-        const existingSlug = await prisma.program.findUnique({
-          where: { slug: baseSlug },
-        });
+        const [existingSlug] = await db
+          .select({ id: programs.id })
+          .from(programs)
+          .where(eq(programs.slug, baseSlug))
+          .limit(1);
         const uniqueSlug = existingSlug
           ? `${baseSlug}-${Date.now().toString().slice(-4)}`
           : baseSlug;
 
-        created = await prisma.program.create({
-          data: {
+        const [item] = await db
+          .insert(programs)
+          .values({
             slug: uniqueSlug,
             programType: String(body.programType || "ACADEMIC"),
             badge: body.badge ? String(body.badge) : null,
@@ -211,8 +248,9 @@ export async function POST(
             imageAlt: String(body.imageAlt || title),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -224,8 +262,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.facility.create({
-          data: {
+        const [item] = await db
+          .insert(facilities)
+          .values({
             badge: String(body.badge || "Facility"),
             title,
             subtitle: String(body.subtitle || ""),
@@ -239,8 +278,9 @@ export async function POST(
               body.showOnHome === undefined ? true : Boolean(body.showOnHome),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -260,8 +300,9 @@ export async function POST(
           art: "Art & Creativity",
           events: "Celebrations & Events",
         };
-        created = await prisma.galleryImage.create({
-          data: {
+        const [item] = await db
+          .insert(galleryImages)
+          .values({
             title,
             category,
             categoryLabel: String(
@@ -273,8 +314,9 @@ export async function POST(
             aspect: String(body.aspect || "square"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -287,8 +329,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.testimonial.create({
-          data: {
+        const [item] = await db
+          .insert(testimonials)
+          .values({
             parentName,
             relation: String(body.relation || "Parent"),
             childName: String(body.childName || ""),
@@ -299,8 +342,9 @@ export async function POST(
             accent: String(body.accent || "magenta"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -313,8 +357,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.teamMember.create({
-          data: {
+        const [item] = await db
+          .insert(teamMembers)
+          .values({
             name,
             role,
             qualification: String(body.qualification || ""),
@@ -325,8 +370,9 @@ export async function POST(
             accent: String(body.accent || "magenta"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -338,8 +384,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.foodMenu.create({
-          data: {
+        const [item] = await db
+          .insert(foodMenus)
+          .values({
             day,
             morningSnack: String(body.morningSnack || ""),
             hotLunch: String(body.hotLunch || ""),
@@ -349,8 +396,9 @@ export async function POST(
             accent: String(body.accent || "magenta"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -367,13 +415,16 @@ export async function POST(
         const rawKey = String(
           body.sectionKey || `${page}-${category}-${slugify(title)}-${Date.now()}`,
         ).trim();
-        const existingKey = await prisma.pageSection.findUnique({
-          where: { sectionKey: rawKey },
-        });
+        const [existingKey] = await db
+          .select({ id: pageSections.id })
+          .from(pageSections)
+          .where(eq(pageSections.sectionKey, rawKey))
+          .limit(1);
         const sectionKey = existingKey ? `${rawKey}-${Date.now()}` : rawKey;
 
-        created = await prisma.pageSection.create({
-          data: {
+        const [item] = await db
+          .insert(pageSections)
+          .values({
             page,
             sectionKey,
             category,
@@ -388,8 +439,9 @@ export async function POST(
             metadata: parseJsonObjectOrNull(body.metadata),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -402,8 +454,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.popupNotification.create({
-          data: {
+        const [item] = await db
+          .insert(popupNotifications)
+          .values({
             badge: body.badge ? String(body.badge).trim() || null : null,
             title,
             message,
@@ -418,8 +471,9 @@ export async function POST(
             accent: String(body.accent || "magenta"),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -433,8 +487,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        created = await prisma.notice.create({
-          data: {
+        const [item] = await db
+          .insert(notices)
+          .values({
             title,
             category: String(body.category || "notice"),
             summary,
@@ -453,8 +508,9 @@ export async function POST(
             highlightOnHome: Boolean(body.highlightOnHome),
             sortOrder: parseIntSafe(body.sortOrder, 0),
             published: Boolean(body.published),
-          },
-        });
+          })
+          .returning();
+        created = item;
         break;
       }
 
@@ -509,9 +565,11 @@ async function handleUpdate(
       const newUsername =
         typeof body.username === "string" ? body.username.trim() : "";
 
-      const user = await prisma.user.findUnique({
-        where: { id: session.userId },
-      });
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
       if (!user) {
         return NextResponse.json({ error: "User not found." }, { status: 404 });
       }
@@ -540,90 +598,95 @@ async function handleUpdate(
         updateData.passwordHash = await bcrypt.hash(newPassword, 12);
       }
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: updateData,
-      });
+      if (Object.keys(updateData).length > 0) {
+        await db.update(users).set(updateData).where(eq(users.id, user.id));
+      }
 
       return NextResponse.json({ ok: true });
     }
 
     if (resource === "settings") {
-      const updated = await prisma.siteSettings.update({
-        where: { id: "default" },
-        data: {
-          ...(body.schoolName !== undefined && { schoolName: String(body.schoolName) }),
-          ...(body.shortName !== undefined && { shortName: String(body.shortName) }),
-          ...(body.schoolType !== undefined && { schoolType: String(body.schoolType) }),
-          ...(body.tagline !== undefined && { tagline: String(body.tagline) }),
-          ...(body.subTagline !== undefined && { subTagline: String(body.subTagline) }),
-          ...(body.logoUrl !== undefined && { logoUrl: String(body.logoUrl) }),
-          ...(body.establishedYear !== undefined && {
-            establishedYear: String(body.establishedYear),
-          }),
-          ...(body.street !== undefined && { street: String(body.street) }),
-          ...(body.ward !== undefined && { ward: String(body.ward) }),
-          ...(body.city !== undefined && { city: String(body.city) }),
-          ...(body.province !== undefined && { province: String(body.province) }),
-          ...(body.country !== undefined && { country: String(body.country) }),
-          ...(body.fullAddress !== undefined && { fullAddress: String(body.fullAddress) }),
-          ...(body.landmark !== undefined && { landmark: String(body.landmark) }),
-          ...(body.primaryPhone !== undefined && {
-            primaryPhone: String(body.primaryPhone),
-          }),
-          ...(body.secondaryPhone !== undefined && {
-            secondaryPhone: String(body.secondaryPhone),
-          }),
-          ...(body.whatsappNumber !== undefined && {
-            whatsappNumber: String(body.whatsappNumber),
-          }),
-          ...(body.whatsappDisplay !== undefined && {
-            whatsappDisplay: String(body.whatsappDisplay),
-          }),
-          ...(body.email !== undefined && { email: String(body.email) }),
-          ...(body.admissionsEmail !== undefined && {
-            admissionsEmail: String(body.admissionsEmail),
-          }),
-          ...(body.openDays !== undefined && { openDays: String(body.openDays) }),
-          ...(body.regularClassTime !== undefined && {
-            regularClassTime: String(body.regularClassTime),
-          }),
-          ...(body.afterClassCareTime !== undefined && {
-            afterClassCareTime: String(body.afterClassCareTime),
-          }),
-          ...(body.daycareTime !== undefined && { daycareTime: String(body.daycareTime) }),
-          ...(body.closedOn !== undefined && { closedOn: String(body.closedOn) }),
-          ...(body.daycareAvailable !== undefined && {
-            daycareAvailable: Boolean(body.daycareAvailable),
-          }),
-          ...(body.foodProvided !== undefined && {
-            foodProvided: Boolean(body.foodProvided),
-          }),
-          ...(body.cctvMonitoring !== undefined && {
-            cctvMonitoring: Boolean(body.cctvMonitoring),
-          }),
-          ...(body.montessoriImplemented !== undefined && {
-            montessoriImplemented: Boolean(body.montessoriImplemented),
-          }),
-          ...(body.facebookUrl !== undefined && { facebookUrl: String(body.facebookUrl) }),
-          ...(body.facebookHandle !== undefined && {
-            facebookHandle: String(body.facebookHandle),
-          }),
-          ...(body.instagramUrl !== undefined && {
-            instagramUrl: String(body.instagramUrl),
-          }),
-          ...(body.instagramHandle !== undefined && {
-            instagramHandle: String(body.instagramHandle),
-          }),
-          ...(body.googleMapsEmbedUrl !== undefined && {
-            googleMapsEmbedUrl: String(body.googleMapsEmbedUrl),
-          }),
-          ...(body.googleMapsLinkUrl !== undefined && {
-            googleMapsLinkUrl: String(body.googleMapsLinkUrl),
-          }),
-          ...(body.heroStats !== undefined && { heroStats: body.heroStats }),
-        },
-      });
+      const updateData: Record<string, unknown> = {
+        ...(body.schoolName !== undefined && { schoolName: String(body.schoolName) }),
+        ...(body.shortName !== undefined && { shortName: String(body.shortName) }),
+        ...(body.schoolType !== undefined && { schoolType: String(body.schoolType) }),
+        ...(body.tagline !== undefined && { tagline: String(body.tagline) }),
+        ...(body.subTagline !== undefined && { subTagline: String(body.subTagline) }),
+        ...(body.logoUrl !== undefined && { logoUrl: String(body.logoUrl) }),
+        ...(body.establishedYear !== undefined && {
+          establishedYear: String(body.establishedYear),
+        }),
+        ...(body.street !== undefined && { street: String(body.street) }),
+        ...(body.ward !== undefined && { ward: String(body.ward) }),
+        ...(body.city !== undefined && { city: String(body.city) }),
+        ...(body.province !== undefined && { province: String(body.province) }),
+        ...(body.country !== undefined && { country: String(body.country) }),
+        ...(body.fullAddress !== undefined && { fullAddress: String(body.fullAddress) }),
+        ...(body.landmark !== undefined && { landmark: String(body.landmark) }),
+        ...(body.primaryPhone !== undefined && {
+          primaryPhone: String(body.primaryPhone),
+        }),
+        ...(body.secondaryPhone !== undefined && {
+          secondaryPhone: String(body.secondaryPhone),
+        }),
+        ...(body.whatsappNumber !== undefined && {
+          whatsappNumber: String(body.whatsappNumber),
+        }),
+        ...(body.whatsappDisplay !== undefined && {
+          whatsappDisplay: String(body.whatsappDisplay),
+        }),
+        ...(body.email !== undefined && { email: String(body.email) }),
+        ...(body.admissionsEmail !== undefined && {
+          admissionsEmail: String(body.admissionsEmail),
+        }),
+        ...(body.openDays !== undefined && { openDays: String(body.openDays) }),
+        ...(body.regularClassTime !== undefined && {
+          regularClassTime: String(body.regularClassTime),
+        }),
+        ...(body.afterClassCareTime !== undefined && {
+          afterClassCareTime: String(body.afterClassCareTime),
+        }),
+        ...(body.daycareTime !== undefined && { daycareTime: String(body.daycareTime) }),
+        ...(body.closedOn !== undefined && { closedOn: String(body.closedOn) }),
+        ...(body.daycareAvailable !== undefined && {
+          daycareAvailable: Boolean(body.daycareAvailable),
+        }),
+        ...(body.foodProvided !== undefined && {
+          foodProvided: Boolean(body.foodProvided),
+        }),
+        ...(body.cctvMonitoring !== undefined && {
+          cctvMonitoring: Boolean(body.cctvMonitoring),
+        }),
+        ...(body.montessoriImplemented !== undefined && {
+          montessoriImplemented: Boolean(body.montessoriImplemented),
+        }),
+        ...(body.facebookUrl !== undefined && {
+          facebookUrl: String(body.facebookUrl),
+        }),
+        ...(body.facebookHandle !== undefined && {
+          facebookHandle: String(body.facebookHandle),
+        }),
+        ...(body.instagramUrl !== undefined && {
+          instagramUrl: String(body.instagramUrl),
+        }),
+        ...(body.instagramHandle !== undefined && {
+          instagramHandle: String(body.instagramHandle),
+        }),
+        ...(body.googleMapsEmbedUrl !== undefined && {
+          googleMapsEmbedUrl: String(body.googleMapsEmbedUrl),
+        }),
+        ...(body.googleMapsLinkUrl !== undefined && {
+          googleMapsLinkUrl: String(body.googleMapsLinkUrl),
+        }),
+        ...(body.heroStats !== undefined && { heroStats: body.heroStats }),
+      };
+
+      const [updated] = await db
+        .update(siteSettings)
+        .set(updateData)
+        .where(eq(siteSettings.id, "default"))
+        .returning();
+
       revalidateSite();
       return NextResponse.json({ ok: true, data: updated });
     }
@@ -637,92 +700,98 @@ async function handleUpdate(
 
     switch (resource) {
       case "programs": {
-        updated = await prisma.program.update({
-          where: { id },
-          data: {
-            ...(body.programType !== undefined && {
-              programType: String(body.programType),
-            }),
-            ...(body.badge !== undefined && {
-              badge: body.badge ? String(body.badge) : null,
-            }),
-            ...(body.title !== undefined && { title: String(body.title) }),
-            ...(body.subtitle !== undefined && { subtitle: String(body.subtitle) }),
-            ...(body.ageGroup !== undefined && { ageGroup: String(body.ageGroup) }),
-            ...(body.ageEligibility !== undefined && {
-              ageEligibility: body.ageEligibility
-                ? String(body.ageEligibility)
-                : null,
-            }),
-            ...(body.timing !== undefined && { timing: String(body.timing) }),
-            ...(body.duration !== undefined && {
-              duration: body.duration ? String(body.duration) : null,
-            }),
-            ...(body.classSize !== undefined && {
-              classSize: body.classSize ? String(body.classSize) : null,
-            }),
-            ...(body.ratio !== undefined && {
-              ratio: body.ratio ? String(body.ratio) : null,
-            }),
-            ...(body.shortDescription !== undefined && {
-              shortDescription: String(body.shortDescription),
-            }),
-            ...(body.fullDescription !== undefined && {
-              fullDescription: String(body.fullDescription),
-            }),
-            ...(body.highlights !== undefined && {
-              highlights: parseJsonStringArray(body.highlights),
-            }),
-            ...(body.curriculumAreas !== undefined && {
-              curriculumAreas: parseJsonStringArray(body.curriculumAreas),
-            }),
-            ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
-            ...(body.imageAlt !== undefined && { imageAlt: String(body.imageAlt) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.programType !== undefined && {
+            programType: String(body.programType),
+          }),
+          ...(body.badge !== undefined && {
+            badge: body.badge ? String(body.badge) : null,
+          }),
+          ...(body.title !== undefined && { title: String(body.title) }),
+          ...(body.subtitle !== undefined && { subtitle: String(body.subtitle) }),
+          ...(body.ageGroup !== undefined && { ageGroup: String(body.ageGroup) }),
+          ...(body.ageEligibility !== undefined && {
+            ageEligibility: body.ageEligibility
+              ? String(body.ageEligibility)
+              : null,
+          }),
+          ...(body.timing !== undefined && { timing: String(body.timing) }),
+          ...(body.duration !== undefined && {
+            duration: body.duration ? String(body.duration) : null,
+          }),
+          ...(body.classSize !== undefined && {
+            classSize: body.classSize ? String(body.classSize) : null,
+          }),
+          ...(body.ratio !== undefined && {
+            ratio: body.ratio ? String(body.ratio) : null,
+          }),
+          ...(body.shortDescription !== undefined && {
+            shortDescription: String(body.shortDescription),
+          }),
+          ...(body.fullDescription !== undefined && {
+            fullDescription: String(body.fullDescription),
+          }),
+          ...(body.highlights !== undefined && {
+            highlights: parseJsonStringArray(body.highlights),
+          }),
+          ...(body.curriculumAreas !== undefined && {
+            curriculumAreas: parseJsonStringArray(body.curriculumAreas),
+          }),
+          ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
+          ...(body.imageAlt !== undefined && { imageAlt: String(body.imageAlt) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(programs)
+          .set(updateData)
+          .where(eq(programs.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "facilities": {
-        updated = await prisma.facility.update({
-          where: { id },
-          data: {
-            ...(body.badge !== undefined && { badge: String(body.badge) }),
-            ...(body.title !== undefined && { title: String(body.title) }),
-            ...(body.subtitle !== undefined && { subtitle: String(body.subtitle) }),
-            ...(body.description !== undefined && {
-              description: String(body.description),
-            }),
-            ...(body.highlights !== undefined && {
-              highlights: parseJsonStringArray(body.highlights),
-            }),
-            ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
-            ...(body.imageAlt !== undefined && { imageAlt: String(body.imageAlt) }),
-            ...(body.showOnHome !== undefined && {
-              showOnHome: Boolean(body.showOnHome),
-            }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.badge !== undefined && { badge: String(body.badge) }),
+          ...(body.title !== undefined && { title: String(body.title) }),
+          ...(body.subtitle !== undefined && { subtitle: String(body.subtitle) }),
+          ...(body.description !== undefined && {
+            description: String(body.description),
+          }),
+          ...(body.highlights !== undefined && {
+            highlights: parseJsonStringArray(body.highlights),
+          }),
+          ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
+          ...(body.imageAlt !== undefined && { imageAlt: String(body.imageAlt) }),
+          ...(body.showOnHome !== undefined && {
+            showOnHome: Boolean(body.showOnHome),
+          }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(facilities)
+          .set(updateData)
+          .where(eq(facilities.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "gallery": {
         const category =
@@ -733,251 +802,294 @@ async function handleUpdate(
           art: "Art & Creativity",
           events: "Celebrations & Events",
         };
-        updated = await prisma.galleryImage.update({
-          where: { id },
-          data: {
-            ...(body.title !== undefined && { title: String(body.title) }),
-            ...(category !== undefined && {
-              category,
-              categoryLabel: String(
-                body.categoryLabel || labelMap[category] || "Campus Life",
-              ),
-            }),
-            ...(body.description !== undefined && {
-              description: String(body.description),
-            }),
-            ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
-            ...(body.dateLabel !== undefined && {
-              dateLabel: String(body.dateLabel),
-            }),
-            ...(body.aspect !== undefined && { aspect: String(body.aspect) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.title !== undefined && { title: String(body.title) }),
+          ...(category !== undefined && {
+            category,
+            categoryLabel: String(
+              body.categoryLabel || labelMap[category] || "Campus Life",
+            ),
+          }),
+          ...(body.description !== undefined && {
+            description: String(body.description),
+          }),
+          ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
+          ...(body.dateLabel !== undefined && {
+            dateLabel: String(body.dateLabel),
+          }),
+          ...(body.aspect !== undefined && { aspect: String(body.aspect) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(galleryImages)
+          .set(updateData)
+          .where(eq(galleryImages.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "testimonials": {
-        updated = await prisma.testimonial.update({
-          where: { id },
-          data: {
-            ...(body.parentName !== undefined && {
-              parentName: String(body.parentName),
-            }),
-            ...(body.relation !== undefined && { relation: String(body.relation) }),
-            ...(body.childName !== undefined && {
-              childName: String(body.childName),
-            }),
-            ...(body.program !== undefined && { program: String(body.program) }),
-            ...(body.quote !== undefined && { quote: String(body.quote) }),
-            ...(body.rating !== undefined && {
-              rating: Math.min(5, Math.max(1, parseIntSafe(body.rating, 5))),
-            }),
-            ...(body.location !== undefined && { location: String(body.location) }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.parentName !== undefined && {
+            parentName: String(body.parentName),
+          }),
+          ...(body.relation !== undefined && { relation: String(body.relation) }),
+          ...(body.childName !== undefined && {
+            childName: String(body.childName),
+          }),
+          ...(body.program !== undefined && { program: String(body.program) }),
+          ...(body.quote !== undefined && { quote: String(body.quote) }),
+          ...(body.rating !== undefined && {
+            rating: Math.min(5, Math.max(1, parseIntSafe(body.rating, 5))),
+          }),
+          ...(body.location !== undefined && { location: String(body.location) }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(testimonials)
+          .set(updateData)
+          .where(eq(testimonials.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "team": {
-        updated = await prisma.teamMember.update({
-          where: { id },
-          data: {
-            ...(body.name !== undefined && { name: String(body.name) }),
-            ...(body.role !== undefined && { role: String(body.role) }),
-            ...(body.qualification !== undefined && {
-              qualification: String(body.qualification),
-            }),
-            ...(body.experience !== undefined && {
-              experience: String(body.experience),
-            }),
-            ...(body.bio !== undefined && { bio: String(body.bio) }),
-            ...(body.quote !== undefined && { quote: String(body.quote) }),
-            ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.name !== undefined && { name: String(body.name) }),
+          ...(body.role !== undefined && { role: String(body.role) }),
+          ...(body.qualification !== undefined && {
+            qualification: String(body.qualification),
+          }),
+          ...(body.experience !== undefined && {
+            experience: String(body.experience),
+          }),
+          ...(body.bio !== undefined && { bio: String(body.bio) }),
+          ...(body.quote !== undefined && { quote: String(body.quote) }),
+          ...(body.imageUrl !== undefined && { imageUrl: String(body.imageUrl) }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(teamMembers)
+          .set(updateData)
+          .where(eq(teamMembers.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "menu": {
-        updated = await prisma.foodMenu.update({
-          where: { id },
-          data: {
-            ...(body.day !== undefined && { day: String(body.day) }),
-            ...(body.morningSnack !== undefined && {
-              morningSnack: String(body.morningSnack),
-            }),
-            ...(body.hotLunch !== undefined && { hotLunch: String(body.hotLunch) }),
-            ...(body.afternoonBooster !== undefined && {
-              afternoonBooster: String(body.afternoonBooster),
-            }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.day !== undefined && { day: String(body.day) }),
+          ...(body.morningSnack !== undefined && {
+            morningSnack: String(body.morningSnack),
+          }),
+          ...(body.hotLunch !== undefined && { hotLunch: String(body.hotLunch) }),
+          ...(body.afternoonBooster !== undefined && {
+            afternoonBooster: String(body.afternoonBooster),
+          }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(foodMenus)
+          .set(updateData)
+          .where(eq(foodMenus.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "sections": {
-        updated = await prisma.pageSection.update({
-          where: { id },
-          data: {
-            ...(body.page !== undefined && { page: String(body.page) }),
-            ...(body.category !== undefined && { category: String(body.category) }),
-            ...(body.badge !== undefined && {
-              badge: body.badge ? String(body.badge) : null,
-            }),
-            ...(body.title !== undefined && { title: String(body.title) }),
-            ...(body.subtitle !== undefined && {
-              subtitle: body.subtitle ? String(body.subtitle) : null,
-            }),
-            ...(body.description !== undefined && {
-              description: String(body.description),
-            }),
-            ...(body.imageUrl !== undefined && {
-              imageUrl: body.imageUrl ? String(body.imageUrl) : null,
-            }),
-            ...(body.imageAlt !== undefined && {
-              imageAlt: body.imageAlt ? String(body.imageAlt) : null,
-            }),
-            ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.metadata !== undefined && {
-              metadata: parseJsonObjectOrNull(body.metadata),
-            }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.page !== undefined && { page: String(body.page) }),
+          ...(body.category !== undefined && { category: String(body.category) }),
+          ...(body.badge !== undefined && {
+            badge: body.badge ? String(body.badge) : null,
+          }),
+          ...(body.title !== undefined && { title: String(body.title) }),
+          ...(body.subtitle !== undefined && {
+            subtitle: body.subtitle ? String(body.subtitle) : null,
+          }),
+          ...(body.description !== undefined && {
+            description: String(body.description),
+          }),
+          ...(body.imageUrl !== undefined && {
+            imageUrl: body.imageUrl ? String(body.imageUrl) : null,
+          }),
+          ...(body.imageAlt !== undefined && {
+            imageAlt: body.imageAlt ? String(body.imageAlt) : null,
+          }),
+          ...(body.iconName !== undefined && { iconName: String(body.iconName) }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.metadata !== undefined && {
+            metadata: parseJsonObjectOrNull(body.metadata),
+          }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(pageSections)
+          .set(updateData)
+          .where(eq(pageSections.id, id))
+          .returning();
+        updated = item;
         break;
       }
-
 
       case "inquiries": {
-        updated = await prisma.contactInquiry.update({
-          where: { id },
-          data: {
-            ...(body.status !== undefined && { status: String(body.status) }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.status !== undefined && { status: String(body.status) }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(contactInquiries)
+          .set(updateData)
+          .where(eq(contactInquiries.id, id))
+          .returning();
+        updated = item;
         break;
       }
 
+      case "admissions": {
+        const updateData: Record<string, unknown> = {
+          ...(body.status !== undefined && { status: String(body.status) }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(admissionApplications)
+          .set(updateData)
+          .where(eq(admissionApplications.id, id))
+          .returning();
+        updated = item;
+        break;
+      }
 
       case "popups": {
-        updated = await prisma.popupNotification.update({
-          where: { id },
-          data: {
-            ...(body.badge !== undefined && {
-              badge: body.badge ? String(body.badge).trim() || null : null,
-            }),
-            ...(body.title !== undefined && { title: String(body.title).trim() }),
-            ...(body.message !== undefined && {
-              message: String(body.message).trim(),
-            }),
-            ...(body.imageUrl !== undefined && {
-              imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
-            }),
-            ...(body.imageAlt !== undefined && {
-              imageAlt: body.imageAlt ? String(body.imageAlt).trim() || null : null,
-            }),
-            ...(body.ctaLabel !== undefined && {
-              ctaLabel: body.ctaLabel ? String(body.ctaLabel).trim() || null : null,
-            }),
-            ...(body.ctaHref !== undefined && {
-              ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
-            }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.badge !== undefined && {
+            badge: body.badge ? String(body.badge).trim() || null : null,
+          }),
+          ...(body.title !== undefined && { title: String(body.title).trim() }),
+          ...(body.message !== undefined && {
+            message: String(body.message).trim(),
+          }),
+          ...(body.imageUrl !== undefined && {
+            imageUrl: body.imageUrl ? String(body.imageUrl).trim() || null : null,
+          }),
+          ...(body.imageAlt !== undefined && {
+            imageAlt: body.imageAlt ? String(body.imageAlt).trim() || null : null,
+          }),
+          ...(body.ctaLabel !== undefined && {
+            ctaLabel: body.ctaLabel ? String(body.ctaLabel).trim() || null : null,
+          }),
+          ...(body.ctaHref !== undefined && {
+            ctaHref: body.ctaHref ? String(body.ctaHref).trim() || null : null,
+          }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(popupNotifications)
+          .set(updateData)
+          .where(eq(popupNotifications.id, id))
+          .returning();
+        updated = item;
         break;
       }
 
       case "notices": {
-        updated = await prisma.notice.update({
-          where: { id },
-          data: {
-            ...(body.title !== undefined && { title: String(body.title).trim() }),
-            ...(body.category !== undefined && {
-              category: String(body.category),
-            }),
-            ...(body.summary !== undefined && {
-              summary: String(body.summary).trim(),
-            }),
-            ...(body.content !== undefined && {
-              content: String(body.content).trim(),
-            }),
-            ...(body.noticeDate !== undefined && {
-              noticeDate: String(body.noticeDate).trim(),
-            }),
-            ...(body.attachmentUrl !== undefined && {
-              attachmentUrl: body.attachmentUrl
-                ? String(body.attachmentUrl).trim() || null
-                : null,
-            }),
-            ...(body.attachmentType !== undefined && {
-              attachmentType: body.attachmentType
-                ? String(body.attachmentType).trim() || null
-                : null,
-            }),
-            ...(body.attachmentName !== undefined && {
-              attachmentName: body.attachmentName
-                ? String(body.attachmentName).trim() || null
-                : null,
-            }),
-            ...(body.accent !== undefined && { accent: String(body.accent) }),
-            ...(body.highlightOnHome !== undefined && {
-              highlightOnHome: Boolean(body.highlightOnHome),
-            }),
-            ...(body.sortOrder !== undefined && {
-              sortOrder: parseIntSafe(body.sortOrder, 0),
-            }),
-            ...(body.published !== undefined && {
-              published: Boolean(body.published),
-            }),
-          },
-        });
+        const updateData: Record<string, unknown> = {
+          ...(body.title !== undefined && { title: String(body.title).trim() }),
+          ...(body.category !== undefined && {
+            category: String(body.category),
+          }),
+          ...(body.summary !== undefined && {
+            summary: String(body.summary).trim(),
+          }),
+          ...(body.content !== undefined && {
+            content: String(body.content).trim(),
+          }),
+          ...(body.noticeDate !== undefined && {
+            noticeDate: String(body.noticeDate).trim(),
+          }),
+          ...(body.attachmentUrl !== undefined && {
+            attachmentUrl: body.attachmentUrl
+              ? String(body.attachmentUrl).trim() || null
+              : null,
+          }),
+          ...(body.attachmentType !== undefined && {
+            attachmentType: body.attachmentType
+              ? String(body.attachmentType).trim() || null
+              : null,
+          }),
+          ...(body.attachmentName !== undefined && {
+            attachmentName: body.attachmentName
+              ? String(body.attachmentName).trim() || null
+              : null,
+          }),
+          ...(body.accent !== undefined && { accent: String(body.accent) }),
+          ...(body.highlightOnHome !== undefined && {
+            highlightOnHome: Boolean(body.highlightOnHome),
+          }),
+          ...(body.sortOrder !== undefined && {
+            sortOrder: parseIntSafe(body.sortOrder, 0),
+          }),
+          ...(body.published !== undefined && {
+            published: Boolean(body.published),
+          }),
+        };
+
+        const [item] = await db
+          .update(notices)
+          .set(updateData)
+          .where(eq(notices.id, id))
+          .returning();
+        updated = item;
         break;
       }
 
@@ -1027,34 +1139,37 @@ export async function DELETE(
   try {
     switch (resource) {
       case "programs":
-        await prisma.program.delete({ where: { id } });
+        await db.delete(programs).where(eq(programs.id, id));
         break;
       case "facilities":
-        await prisma.facility.delete({ where: { id } });
+        await db.delete(facilities).where(eq(facilities.id, id));
         break;
       case "gallery":
-        await prisma.galleryImage.delete({ where: { id } });
+        await db.delete(galleryImages).where(eq(galleryImages.id, id));
         break;
       case "testimonials":
-        await prisma.testimonial.delete({ where: { id } });
+        await db.delete(testimonials).where(eq(testimonials.id, id));
         break;
       case "team":
-        await prisma.teamMember.delete({ where: { id } });
+        await db.delete(teamMembers).where(eq(teamMembers.id, id));
         break;
       case "menu":
-        await prisma.foodMenu.delete({ where: { id } });
+        await db.delete(foodMenus).where(eq(foodMenus.id, id));
         break;
       case "sections":
-        await prisma.pageSection.delete({ where: { id } });
+        await db.delete(pageSections).where(eq(pageSections.id, id));
         break;
       case "inquiries":
-        await prisma.contactInquiry.delete({ where: { id } });
+        await db.delete(contactInquiries).where(eq(contactInquiries.id, id));
+        break;
+      case "admissions":
+        await db.delete(admissionApplications).where(eq(admissionApplications.id, id));
         break;
       case "popups":
-        await prisma.popupNotification.delete({ where: { id } });
+        await db.delete(popupNotifications).where(eq(popupNotifications.id, id));
         break;
       case "notices":
-        await prisma.notice.delete({ where: { id } });
+        await db.delete(notices).where(eq(notices.id, id));
         break;
       default:
         return NextResponse.json(

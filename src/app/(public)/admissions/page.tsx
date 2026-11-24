@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { CheckCircle2, FileText, PhoneCall } from "lucide-react";
+import Link from "next/link";
+import { ArrowDown, CheckCircle2, FileText, PhoneCall } from "lucide-react";
 import {
   ScrollReveal,
   StaggerContainer,
   StaggerItem,
   TactileCard,
 } from "@/components/motion/MontessoriMotion";
-import { AdmissionInquiryForm } from "@/components/sections/AdmissionInquiryForm";
 import { FaqAccordion } from "@/components/sections/FaqAccordion";
+import { OnlineAdmissionForm } from "@/components/sections/OnlineAdmissionForm";
 import { IconMap } from "@/components/ui/IconMap";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -24,9 +25,9 @@ import { ACCENT_STYLES } from "@/lib/theme";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Admissions & Campus Tour Inquiry",
+  title: "Online Admission Application & Enrollment",
   description:
-    "Learn about our 4-step admission process, age eligibility, required documents, and submit a visit inquiry at Kids Berry Kindergarten School, Pichara, Biratnagar-11.",
+    "Apply online for Playgroup, Nursery, LKG, UKG, Grade 1 & Grade 2 admissions at Kids Berry Kindergarten School, Pichara-11, Biratnagar. Upload admission documents directly and check age guidelines.",
 };
 
 export default async function AdmissionsPage() {
@@ -43,10 +44,20 @@ export default async function AdmissionsPage() {
   return (
     <>
       <PageHeader
-        title="Admissions & Campus Tour Inquiry"
-        subtitle={`We keep enrollment simple, personal, and test-free—starting with a relaxed campus visit in ${site.address.street}.`}
+        title="Online Admissions & Enrollment (PG to Grade 2)"
+        subtitle={`Submit your child's admission application and documents directly online for our Montessori & Primary Wing in ${site.address.street}.`}
         currentPage="Admissions"
       />
+
+      <div className="mx-auto flex max-w-7xl justify-center px-4 pt-4 sm:px-6 lg:px-8">
+        <a
+          href="#admission-form"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF7A45] via-[#FF6B81] to-[#E91E63] px-7 py-3 text-sm font-semibold text-white shadow-warm transition-transform hover:-translate-y-0.5"
+        >
+          <span>Fill Online Admission Form &amp; Upload Documents</span>
+          <ArrowDown className="h-4 w-4" />
+        </a>
+      </div>
 
       {/* 1. 4-Step Admission Process */}
       {steps.length > 0 && (
@@ -192,6 +203,22 @@ export default async function AdmissionsPage() {
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-5 rounded-2xl border border-[#26A69A]/20 bg-[#26A69A]/8 p-3.5 text-xs text-[#2D3436]">
+                    <p className="font-semibold text-[#26A69A]">
+                      Digital Upload Ready
+                    </p>
+                    <p className="mt-0.5 text-[#78909C]">
+                      Upload clear photos or PDFs of these documents directly in
+                      the{" "}
+                      <Link
+                        href="#admission-form"
+                        className="font-semibold text-[#E91E63] hover:underline"
+                      >
+                        Online Admission Form below
+                      </Link>
+                      .
+                    </p>
+                  </div>
                 </div>
               </ScrollReveal>
             )}
@@ -199,23 +226,24 @@ export default async function AdmissionsPage() {
         </section>
       )}
 
-      {/* 3. Inquiry Form Section */}
+      {/* 3. Online Admission Form & Document Submission Section */}
+      <div id="inquiry-form" />
       <section
-        id="inquiry-form"
+        id="admission-form"
         className="scroll-mt-28 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
       >
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12">
-          <ScrollReveal direction="left" className="lg:col-span-5">
+          <ScrollReveal direction="left" className="lg:col-span-4">
             <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF1EB] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#E91E63]">
-              Start the Conversation
+              Online Admission Application
             </span>
-            <h2 className="mt-4 text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] text-[#2D3436] sm:text-[2.15rem]">
-              Book a Friendly Tour or Ask About Seat Availability
+            <h2 className="mt-4 text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] text-[#2D3436] sm:text-[2.1rem]">
+              Apply for Admission Online
             </h2>
             <p className="mt-4 text-base leading-relaxed text-[#78909C]">
-              Share a few details in the form and our {site.address.street}{" "}
-              admissions desk will reach out promptly, or call/WhatsApp us
-              directly for immediate assistance.
+              Complete your child&rsquo;s admission details and attach photos or
+              PDFs of required documents. Your application goes directly to our{" "}
+              {site.address.street} admissions desk.
             </p>
 
             <div className="mt-8 space-y-4 rounded-3xl border border-[#26A69A]/20 bg-[#26A69A]/8 p-6">
@@ -237,8 +265,8 @@ export default async function AdmissionsPage() {
             </div>
           </ScrollReveal>
 
-          <ScrollReveal direction="right" delay={0.1} className="lg:col-span-7">
-            <AdmissionInquiryForm
+          <ScrollReveal direction="right" delay={0.1} className="lg:col-span-8">
+            <OnlineAdmissionForm
               programs={programs}
               whatsappNumber={site.contact.whatsappNumber}
               schoolName={site.schoolName}

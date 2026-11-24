@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { count } from "drizzle-orm";
 import {
   ADMISSION_FAQS,
   ADMISSION_REQUIREMENTS,
@@ -17,9 +17,21 @@ import {
   TEAM_MEMBERS,
   TESTIMONIALS,
   WEEKLY_MENU,
-} from "../src/data/site-data";
-
-const prisma = new PrismaClient();
+} from "../data/site-data";
+import {
+  db,
+  facilities,
+  foodMenus,
+  galleryImages,
+  notices,
+  pageSections,
+  popupNotifications,
+  programs,
+  siteSettings,
+  teamMembers,
+  testimonials,
+  users,
+} from "./index";
 
 async function main() {
   const initialUsername = (
@@ -29,21 +41,24 @@ async function main() {
     process.env.ADMIN_INITIAL_PASSWORD || "kidsadmin@123";
   const passwordHash = await bcrypt.hash(initialPassword, 12);
 
-  await prisma.user.upsert({
-    where: { username: initialUsername },
-    update: { passwordHash },
-    create: {
+  // 1. Admin User
+  await db
+    .insert(users)
+    .values({
       username: initialUsername,
       passwordHash,
       name: "Kids Berry Administrator",
       role: "ADMIN",
-    },
-  });
+    })
+    .onConflictDoUpdate({
+      target: users.username,
+      set: { passwordHash },
+    });
 
-  await prisma.siteSettings.upsert({
-    where: { id: "default" },
-    update: {},
-    create: {
+  // 2. SiteSettings
+  await db
+    .insert(siteSettings)
+    .values({
       id: "default",
       schoolName: SITE_CONFIG.schoolName,
       shortName: SITE_CONFIG.shortName,
@@ -81,16 +96,15 @@ async function main() {
       googleMapsEmbedUrl: SITE_CONFIG.googleMapsEmbedUrl,
       googleMapsLinkUrl: SITE_CONFIG.googleMapsLinkUrl,
       heroStats: SITE_CONFIG.heroStats,
-    },
-  });
+    })
+    .onConflictDoNothing();
 
-  // Seed Care Tracks + Academic Programs into Program model
+  // 3. Programs: Care Tracks
   for (let i = 0; i < CARE_TRACKS.length; i++) {
     const track = CARE_TRACKS[i];
-    await prisma.program.upsert({
-      where: { slug: track.id },
-      update: {},
-      create: {
+    await db
+      .insert(programs)
+      .values({
         slug: track.id,
         programType: "CARE_TRACK",
         badge: track.badge,
@@ -112,16 +126,16 @@ async function main() {
         imageAlt: track.imageAlt,
         sortOrder: i + 1,
         published: true,
-      },
-    });
+      })
+      .onConflictDoNothing();
   }
 
+  // 4. Programs: Academic
   for (let i = 0; i < PROGRAMS.length; i++) {
     const prog = PROGRAMS[i];
-    await prisma.program.upsert({
-      where: { slug: prog.slug },
-      update: {},
-      create: {
+    await db
+      .insert(programs)
+      .values({
         slug: prog.slug,
         programType: "ACADEMIC",
         badge: prog.ageGroup,
@@ -143,120 +157,110 @@ async function main() {
         imageAlt: prog.imageAlt,
         sortOrder: i + 1,
         published: true,
-      },
-    });
+      })
+      .onConflictDoNothing();
   }
 
-  // Seed Facilities (check existing by title to remain idempotent)
-  const existingFacilityCount = await prisma.facility.count();
-  if (existingFacilityCount === 0) {
+  // 5. Facilities
+  const [facCount] = await db.select({ value: count() }).from(facilities);
+  if ((facCount?.value ?? 0) === 0) {
     for (let i = 0; i < DETAILED_FACILITIES.length; i++) {
       const fac = DETAILED_FACILITIES[i];
-      await prisma.facility.create({
-        data: {
-          badge: fac.badge,
-          title: fac.title,
-          subtitle: fac.subtitle,
-          description: fac.description,
-          highlights: fac.highlights,
-          iconName: fac.iconName,
-          accent: fac.accent,
-          imageUrl: fac.image,
-          imageAlt: fac.imageAlt,
-          showOnHome: i < 4,
-          sortOrder: i + 1,
-          published: true,
-        },
+      await db.insert(facilities).values({
+        badge: fac.badge,
+        title: fac.title,
+        subtitle: fac.subtitle,
+        description: fac.description,
+        highlights: fac.highlights,
+        iconName: fac.iconName,
+        accent: fac.accent,
+        imageUrl: fac.image,
+        imageAlt: fac.imageAlt,
+        showOnHome: i < 4,
+        sortOrder: i + 1,
+        published: true,
       });
     }
   }
 
-  // Seed Gallery
-  const existingGalleryCount = await prisma.galleryImage.count();
-  if (existingGalleryCount === 0) {
+  // 6. Gallery
+  const [galCount] = await db.select({ value: count() }).from(galleryImages);
+  if ((galCount?.value ?? 0) === 0) {
     for (let i = 0; i < GALLERY_ITEMS.length; i++) {
       const g = GALLERY_ITEMS[i];
-      await prisma.galleryImage.create({
-        data: {
-          title: g.title,
-          category: g.category,
-          categoryLabel: g.categoryLabel,
-          description: g.description,
-          imageUrl: g.imageUrl,
-          dateLabel: g.date,
-          aspect: g.aspect || "square",
-          sortOrder: i + 1,
-          published: true,
-        },
+      await db.insert(galleryImages).values({
+        title: g.title,
+        category: g.category,
+        categoryLabel: g.categoryLabel,
+        description: g.description,
+        imageUrl: g.imageUrl,
+        dateLabel: g.date,
+        aspect: g.aspect || "square",
+        sortOrder: i + 1,
+        published: true,
       });
     }
   }
 
-  // Seed Testimonials
-  const existingTestimonialsCount = await prisma.testimonial.count();
-  if (existingTestimonialsCount === 0) {
+  // 7. Testimonials
+  const [testCount] = await db.select({ value: count() }).from(testimonials);
+  if ((testCount?.value ?? 0) === 0) {
     for (let i = 0; i < TESTIMONIALS.length; i++) {
       const t = TESTIMONIALS[i];
-      await prisma.testimonial.create({
-        data: {
-          parentName: t.parentName,
-          relation: t.relation,
-          childName: t.childName,
-          program: t.program,
-          quote: t.quote,
-          rating: t.rating,
-          location: t.location,
-          accent: t.accent,
-          sortOrder: i + 1,
-          published: true,
-        },
+      await db.insert(testimonials).values({
+        parentName: t.parentName,
+        relation: t.relation,
+        childName: t.childName,
+        program: t.program,
+        quote: t.quote,
+        rating: t.rating,
+        location: t.location,
+        accent: t.accent,
+        sortOrder: i + 1,
+        published: true,
       });
     }
   }
 
-  // Seed Team Members
-  const existingTeamCount = await prisma.teamMember.count();
-  if (existingTeamCount === 0) {
+  // 8. Team
+  const [teamCount] = await db.select({ value: count() }).from(teamMembers);
+  if ((teamCount?.value ?? 0) === 0) {
     for (let i = 0; i < TEAM_MEMBERS.length; i++) {
       const m = TEAM_MEMBERS[i];
-      await prisma.teamMember.create({
-        data: {
-          name: m.name,
-          role: m.role,
-          qualification: m.qualification,
-          experience: m.experience,
-          bio: m.bio,
-          quote: m.quote,
-          imageUrl: m.image,
-          accent: m.accent,
-          sortOrder: i + 1,
-          published: true,
-        },
+      await db.insert(teamMembers).values({
+        name: m.name,
+        role: m.role,
+        qualification: m.qualification,
+        experience: m.experience,
+        bio: m.bio,
+        quote: m.quote,
+        imageUrl: m.image,
+        accent: m.accent,
+        sortOrder: i + 1,
+        published: true,
       });
     }
   }
 
-  // Seed Food Menu
-  const existingMenuCount = await prisma.foodMenu.count();
-  if (existingMenuCount === 0) {
+  // 9. Food Menu
+  const [menuCount] = await db.select({ value: count() }).from(foodMenus);
+  if ((menuCount?.value ?? 0) === 0) {
     for (let i = 0; i < WEEKLY_MENU.length; i++) {
       const item = WEEKLY_MENU[i];
-      await prisma.foodMenu.create({
-        data: {
-          day: item.day,
-          morningSnack: item.morningSnack,
-          hotLunch: item.hotLunch,
-          afternoonBooster: item.afternoonBooster,
-          accent: item.accent,
-          sortOrder: i + 1,
-          published: true,
-        },
+      await db.insert(foodMenus).values({
+        day: item.day,
+        morningSnack: item.morningSnack,
+        hotLunch: item.hotLunch,
+        afternoonBooster: item.afternoonBooster,
+        accent: item.accent,
+        sortOrder: i + 1,
+        published: true,
       });
     }
   }
 
-  // Seed Page Sections
-  const pageSections: Array<{
+  // 10. Page Sections
+  const sectionsList: Array<{
     page: string;
     sectionKey: string;
     category: string;
@@ -268,7 +272,7 @@ async function main() {
     imageAlt: string | null;
     iconName: string;
     accent: string;
-    metadata: Prisma.InputJsonValue | null;
+    metadata: unknown;
     sortOrder: number;
     published: boolean;
   }> = [
@@ -366,7 +370,6 @@ async function main() {
       sortOrder: 1,
       published: true,
     },
-    // Home Care Grid cards (6 uniform cards)
     {
       page: "home",
       sectionKey: "home-care-grid-1",
@@ -471,10 +474,9 @@ async function main() {
     },
   ];
 
-  // Key Benefits
   for (let i = 0; i < KEY_BENEFITS.length; i++) {
     const b = KEY_BENEFITS[i];
-    pageSections.push({
+    sectionsList.push({
       page: "home",
       sectionKey: `benefit-${b.id}`,
       category: "benefit",
@@ -492,10 +494,9 @@ async function main() {
     });
   }
 
-  // Core Values
   for (let i = 0; i < CORE_VALUES.length; i++) {
     const v = CORE_VALUES[i];
-    pageSections.push({
+    sectionsList.push({
       page: "about",
       sectionKey: `value-${v.id}`,
       category: "value",
@@ -513,10 +514,9 @@ async function main() {
     });
   }
 
-  // Learning Pillars
   for (let i = 0; i < LEARNING_PILLARS.length; i++) {
     const p = LEARNING_PILLARS[i];
-    pageSections.push({
+    sectionsList.push({
       page: "programs",
       sectionKey: `pillar-${p.id}`,
       category: "pillar",
@@ -534,10 +534,9 @@ async function main() {
     });
   }
 
-  // Daily Routine
   for (let i = 0; i < DAILY_ROUTINE.length; i++) {
     const r = DAILY_ROUTINE[i];
-    pageSections.push({
+    sectionsList.push({
       page: "programs",
       sectionKey: `routine-${r.id}`,
       category: "routine",
@@ -555,10 +554,9 @@ async function main() {
     });
   }
 
-  // Admission Steps
   for (let i = 0; i < ADMISSION_STEPS.length; i++) {
     const s = ADMISSION_STEPS[i];
-    pageSections.push({
+    sectionsList.push({
       page: "admissions",
       sectionKey: `admission-step-${s.stepNumber}`,
       category: "admission-step",
@@ -576,10 +574,9 @@ async function main() {
     });
   }
 
-  // Admission Requirements
   for (let i = 0; i < ADMISSION_REQUIREMENTS.length; i++) {
     const req = ADMISSION_REQUIREMENTS[i];
-    pageSections.push({
+    sectionsList.push({
       page: "admissions",
       sectionKey: `admission-${req.id}`,
       category: "admission-req",
@@ -597,10 +594,9 @@ async function main() {
     });
   }
 
-  // Age Eligibility Rows
   for (let i = 0; i < AGE_ELIGIBILITY.length; i++) {
     const row = AGE_ELIGIBILITY[i];
-    pageSections.push({
+    sectionsList.push({
       page: "admissions",
       sectionKey: `age-${row.id}`,
       category: "age-row",
@@ -618,10 +614,9 @@ async function main() {
     });
   }
 
-  // Admission FAQs
   for (let i = 0; i < ADMISSION_FAQS.length; i++) {
     const faq = ADMISSION_FAQS[i];
-    pageSections.push({
+    sectionsList.push({
       page: "admissions",
       sectionKey: faq.id,
       category: "faq",
@@ -639,11 +634,10 @@ async function main() {
     });
   }
 
-  for (const section of pageSections) {
-    await prisma.pageSection.upsert({
-      where: { sectionKey: section.sectionKey },
-      update: {},
-      create: {
+  for (const section of sectionsList) {
+    await db
+      .insert(pageSections)
+      .values({
         page: section.page,
         sectionKey: section.sectionKey,
         category: section.category,
@@ -655,37 +649,35 @@ async function main() {
         imageAlt: section.imageAlt,
         iconName: section.iconName,
         accent: section.accent,
-        metadata: section.metadata ?? undefined,
+        metadata: section.metadata,
         sortOrder: section.sortOrder,
         published: section.published,
-      },
+      })
+      .onConflictDoNothing();
+  }
+
+  // 11. Initial Popup
+  const [popCount] = await db.select({ value: count() }).from(popupNotifications);
+  if ((popCount?.value ?? 0) === 0) {
+    await db.insert(popupNotifications).values({
+      badge: "Admissions Open",
+      title: "Admissions Open for the New Montessori Session!",
+      message:
+        "Enroll your little one at Kids Berry Kindergarten School in Pichara, Biratnagar-11. Regular Classes (9:00 AM – 3:00 PM), Daycare, After-Class Care (3:00 PM – 5:00 PM), 24/7 CCTV safety, and fresh weekly meals with daily hot milk & fruits.",
+      imageUrl: "/images/hero-classroom.jpg",
+      imageAlt: "Kids Berry Kindergarten School Montessori classroom",
+      ctaLabel: "Book a Campus Visit",
+      ctaHref: "/admissions",
+      accent: "magenta",
+      sortOrder: 1,
+      published: true,
     });
   }
 
-  // Seed initial CMS Popup Notification (if none exist yet)
-  const existingPopupCount = await prisma.popupNotification.count();
-  if (existingPopupCount === 0) {
-    await prisma.popupNotification.create({
-      data: {
-        badge: "Admissions Open",
-        title: "Admissions Open for the New Montessori Session!",
-        message:
-          "Enroll your little one at Kids Berry Kindergarten School in Pichara, Biratnagar-11. Regular Classes (9:00 AM – 3:00 PM), Daycare, After-Class Care (3:00 PM – 5:00 PM), 24/7 CCTV safety, and fresh weekly meals with daily hot milk & fruits.",
-        imageUrl: "/images/hero-classroom.jpg",
-        imageAlt: "Kids Berry Kindergarten School Montessori classroom",
-        ctaLabel: "Book a Campus Visit",
-        ctaHref: "/admissions",
-        accent: "magenta",
-        sortOrder: 1,
-        published: true,
-      },
-    });
-  }
-
-  // Seed initial CMS Notices (General Notice, Exam Details, Admission Offer) if none exist
-  const existingNoticeCount = await prisma.notice.count();
-  if (existingNoticeCount === 0) {
-    const initialNotices = [
+  // 12. Initial Notices
+  const [notCount] = await db.select({ value: count() }).from(notices);
+  if ((notCount?.value ?? 0) === 0) {
+    await db.insert(notices).values([
       {
         title: "New Academic Session Admissions Open (Playgroup to UKG)",
         category: "notice",
@@ -734,21 +726,14 @@ async function main() {
         sortOrder: 3,
         published: true,
       },
-    ];
-
-    for (const notice of initialNotices) {
-      await prisma.notice.create({ data: notice });
-    }
+    ]);
   }
 
-  console.log("Kids Berry CMS seed completed successfully.");
+  console.log("Kids Berry Drizzle seed completed successfully.");
 }
 
 main()
   .catch((e) => {
     console.error("Seed error:", e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

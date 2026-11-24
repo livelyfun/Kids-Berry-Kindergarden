@@ -1047,20 +1047,13 @@ export const ADMISSION_REQUIREMENTS: AdmissionRequirement[] = [
   },
   {
     id: "req-3",
-    label: "Immunization & Dietary Allergy Note",
-    detail:
-      "Copy of vaccination card plus any food allergy notes for our weekly school meal menu",
-    required: true,
-  },
-  {
-    id: "req-4",
     label: "Parent / Guardian ID Verification",
     detail:
       "1 photocopy of citizenship card or valid government ID for safe pickup authorization",
     required: true,
   },
   {
-    id: "req-5",
+    id: "req-4",
     label: "Previous Preschool Progress Note (Optional)",
     detail:
       "Applicable only if transferring into Junior KG or Senior KG from another school",

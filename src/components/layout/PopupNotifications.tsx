@@ -118,19 +118,51 @@ export function PopupNotifications({ popups }: PopupNotificationsProps) {
               >
                 {current.imageUrl && (
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#FFF1EB]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={current.imageUrl}
-                      alt={current.imageAlt || current.title}
-                      className="h-full w-full object-cover"
-                    />
+                    {current.ctaHref ? (
+                      isInternalLink ? (
+                        <Link
+                          href={current.ctaHref}
+                          onClick={() => setOpen(false)}
+                          className="block h-full w-full"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={current.imageUrl}
+                            alt={current.imageAlt || current.title}
+                            className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+                          />
+                        </Link>
+                      ) : (
+                        <a
+                          href={current.ctaHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setOpen(false)}
+                          className="block h-full w-full"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={current.imageUrl}
+                            alt={current.imageAlt || current.title}
+                            className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+                          />
+                        </a>
+                      )
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={current.imageUrl}
+                        alt={current.imageAlt || current.title}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
                     <div
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#2D3436]/35 via-transparent to-transparent"
                     />
                     {current.badge && (
                       <span
-                        className={`absolute bottom-3 left-5 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-semibold shadow-sm ${styles.solidBg}`}
+                        className={`pointer-events-none absolute bottom-3 left-5 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-semibold shadow-sm ${styles.solidBg}`}
                       >
                         <Sparkles className="h-3 w-3" />
                         <span>{current.badge}</span>
@@ -173,15 +205,19 @@ export function PopupNotifications({ popups }: PopupNotificationsProps) {
                   {/* Action Buttons */}
                   <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#2D3436]/8 pt-5">
                     <div className="flex flex-wrap items-center gap-2.5">
-                      {current.ctaLabel &&
-                        current.ctaHref &&
+                      {current.ctaHref &&
                         (isInternalLink ? (
                           <Link
                             href={current.ctaHref}
                             onClick={() => setOpen(false)}
                             className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-warm transition-transform hover:-translate-y-0.5 ${styles.solidBg}`}
                           >
-                            <span>{current.ctaLabel}</span>
+                            <span>
+                              {current.ctaLabel ||
+                                (current.ctaHref.includes("admission")
+                                  ? "Apply for Admission"
+                                  : "Visit Page")}
+                            </span>
                             <ArrowRight className="h-4 w-4" />
                           </Link>
                         ) : (
@@ -192,7 +228,7 @@ export function PopupNotifications({ popups }: PopupNotificationsProps) {
                             onClick={() => setOpen(false)}
                             className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-warm transition-transform hover:-translate-y-0.5 ${styles.solidBg}`}
                           >
-                            <span>{current.ctaLabel}</span>
+                            <span>{current.ctaLabel || "Open Link"}</span>
                             <ArrowRight className="h-4 w-4" />
                           </a>
                         ))}

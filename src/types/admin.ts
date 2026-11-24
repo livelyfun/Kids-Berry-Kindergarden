@@ -196,6 +196,39 @@ export interface AdminNotice {
   createdAt: string;
 }
 
+export interface AdminAdmissionDocument {
+  key: string;
+  label: string;
+  url: string;
+  fileType: "image" | "pdf" | "file";
+  fileName: string;
+}
+
+export interface AdminAdmissionApplication {
+  id: string;
+  childName: string;
+  childDob: string;
+  childAge: string;
+  childGender: string;
+  program: string;
+  preferredCare: string;
+  transportRequired: boolean;
+  mealsRequired: boolean;
+  previousSchool: string | null;
+  medicalNotes: string | null;
+  parentName: string;
+  relation: string;
+  phone: string;
+  secondaryPhone: string | null;
+  email: string | null;
+  address: string;
+  message: string | null;
+  documents: AdminAdmissionDocument[];
+  status: string;
+  published: boolean;
+  createdAt: string;
+}
+
 export interface AdminInitialData {
   settings: AdminSiteSettings | null;
   programs: AdminProgram[];
@@ -206,6 +239,7 @@ export interface AdminInitialData {
   menu: AdminFoodMenu[];
   sections: AdminPageSection[];
   inquiries: AdminContactInquiry[];
+  admissions?: AdminAdmissionApplication[];
   popups: AdminPopupNotification[];
   notices: AdminNotice[];
 }
