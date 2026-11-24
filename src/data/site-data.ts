@@ -465,11 +465,11 @@ export const TESTIMONIALS: TestimonialItem[] = [
 
 export const TEAM_MEMBERS: TeamMember[] = [
   {
-    id: "principal-director",
-    name: "School Principal & Director",
-    role: "Founder & Principal • Kids Berry Montessori",
-    qualification: "Educational Leadership & Montessori Administration",
-    experience: "Leading Kids Berry Academy (Pichara-11, Biratnagar)",
+    id: "school-founder",
+    name: "School Founder",
+    role: "Founder • Kids Berry Montessori",
+    qualification: "Founder & Visionary Leader",
+    experience: "Founder — Kids Berry Kindergarten School (Pichara-11, Biratnagar)",
     bio: "Dedicated to building a caring, child-friendly Montessori and primary learning environment in Pichara-11, Biratnagar where every child is treated as special and blossoms with confidence.",
     quote:
       "Every child is a little star with endless dreams and boundless potential.",
